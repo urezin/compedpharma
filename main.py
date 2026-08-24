@@ -215,6 +215,12 @@ class Document(Base):
     category: Mapped[str] = mapped_column(String(120), default="Policy")
     body: Mapped[str] = mapped_column(Text, default="")
     expires: Mapped[str] = mapped_column(String(20), default="")
+    # Approval workflow ("material approval"): a document is Draft until routed
+    # for sign-off, In Review while roles sign in order, then Approved/Rejected.
+    status: Mapped[str] = mapped_column(String(20), default="Draft")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    submitted_at: Mapped[str] = mapped_column(String(40), default="")
+    approved_at: Mapped[str] = mapped_column(String(40), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -224,6 +230,29 @@ class Acknowledgement(Base):
     account_id: Mapped[int] = mapped_column(Integer, index=True)
     document_id: Mapped[int] = mapped_column(Integer, index=True)
     who: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class ApprovalStep(Base):
+    """One sign-off in a document's approval route (DocuSign-style, sequential).
+
+    Each step is assigned to a named person acting in a role (Regulatory,
+    Pharmacovigilance, Management, …). Steps activate in order; a signature
+    captures the typed name, a meaning-of-signature statement, and a timestamp.
+    """
+    __tablename__ = "docs_approval_steps"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(Integer, index=True)
+    document_id: Mapped[int] = mapped_column(Integer, index=True)
+    seq: Mapped[int] = mapped_column(Integer, default=1)
+    role: Mapped[str] = mapped_column(String(80), default="")
+    assignee_name: Mapped[str] = mapped_column(String(160), default="")
+    assignee_email: Mapped[str] = mapped_column(String(200), default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending")   # pending|active|approved|rejected
+    signed_name: Mapped[str] = mapped_column(String(160), default="")
+    intent: Mapped[str] = mapped_column(Text, default="")
+    comment: Mapped[str] = mapped_column(Text, default="")
+    signed_at: Mapped[str] = mapped_column(String(40), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -311,9 +340,31 @@ app = FastAPI(title=APP_NAME)
 _STATIC = os.path.dirname(__file__)
 
 
+def _migrate():
+    """Add approval-workflow columns to docs_documents on existing databases.
+
+    create_all() only creates new tables (docs_approval_steps is picked up
+    automatically), so for a persisted DB we add the new Document columns with
+    idempotent ALTERs. Works on SQLite and Postgres; ignores 'already exists'.
+    """
+    cols = {
+        "status": "VARCHAR(20) DEFAULT 'Draft'",
+        "version": "INTEGER DEFAULT 1",
+        "submitted_at": "VARCHAR(40) DEFAULT ''",
+        "approved_at": "VARCHAR(40) DEFAULT ''",
+    }
+    for name, ddl in cols.items():
+        try:
+            with engine.begin() as conn:
+                conn.exec_driver_sql(f"ALTER TABLE docs_documents ADD COLUMN {name} {ddl}")
+        except Exception:
+            pass
+
+
 @app.on_event("startup")
 def _startup():
     Base.metadata.create_all(bind=engine)
+    _migrate()
 
 
 @app.get("/", include_in_schema=False)
@@ -902,7 +953,47 @@ def ats_cand_stage(cid: int, body: CandStageIn, session: str | None = Cookie(def
 # ---------------------------------------------------------------------------
 # Docs endpoints
 # ---------------------------------------------------------------------------
-DOC_F = ["title", "category", "body", "expires", "created_at"]
+DOC_F = ["title", "category", "body", "expires", "status", "version",
+         "submitted_at", "approved_at", "created_at"]
+STEP_F = ["seq", "role", "assignee_name", "assignee_email", "status",
+          "signed_name", "intent", "comment", "signed_at"]
+
+# Preset approval roles for pharmacovigilance / regulatory material sign-off,
+# each with a default meaning-of-signature statement (editable at signing time).
+ROLE_PRESETS = [
+    {"role": "Regulatory Affairs",
+     "intent": "Reviewed and approved for regulatory compliance."},
+    {"role": "Pharmacovigilance (QPPV)",
+     "intent": "Approved from a pharmacovigilance and drug-safety standpoint."},
+    {"role": "Quality Assurance",
+     "intent": "Reviewed and approved for quality and document control."},
+    {"role": "Medical Affairs",
+     "intent": "Reviewed and approved for medical accuracy."},
+    {"role": "Management",
+     "intent": "Approved for release and authorised for use."},
+]
+
+
+def _steps_for(db, doc_id):
+    return db.execute(select(ApprovalStep).where(ApprovalStep.document_id == doc_id)
+                      .order_by(ApprovalStep.seq)).scalars().all()
+
+
+def _route_summary(steps):
+    total = len(steps)
+    approved = sum(1 for s in steps if s.status == "approved")
+    current = next((s for s in steps if s.status == "active"), None)
+    return {"steps": total, "approved": approved,
+            "current_role": current.role if current else "",
+            "current_seq": current.seq if current else 0}
+
+
+@app.get("/api/docs/roles")
+def docs_roles(session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Session = Depends(get_db)):
+    acc, err = _require(db, session, "docs")
+    if err:
+        return err
+    return {"roles": ROLE_PRESETS}
 
 
 @app.get("/api/docs/summary")
@@ -911,11 +1002,14 @@ def docs_summary(session: str | None = Cookie(default=None, alias=COOKIE_NAME), 
     if err:
         return err
     docs = db.execute(select(func.count(Document.id)).where(Document.account_id == acc.id)).scalar()
-    acks = db.execute(select(func.count(Acknowledgement.id)).where(Acknowledgement.account_id == acc.id)).scalar()
+    in_review = db.execute(select(func.count(Document.id)).where(
+        Document.account_id == acc.id, Document.status == "In Review")).scalar()
+    approved = db.execute(select(func.count(Document.id)).where(
+        Document.account_id == acc.id, Document.status == "Approved")).scalar()
     today = date.today().isoformat()
     expiring = db.execute(select(func.count(Document.id)).where(
         Document.account_id == acc.id, Document.expires != "", Document.expires <= today)).scalar()
-    return {"documents": docs, "acknowledgements": acks, "expired": expiring}
+    return {"documents": docs, "in_review": in_review, "approved": approved, "expired": expiring}
 
 
 class DocIn(BaseModel):
@@ -936,8 +1030,26 @@ def docs_list(session: str | None = Cookie(default=None, alias=COOKIE_NAME), db:
         d = _dump(r, DOC_F)
         d["acks"] = db.execute(select(func.count(Acknowledgement.id)).where(
             Acknowledgement.document_id == r.id)).scalar()
+        d["route"] = _route_summary(_steps_for(db, r.id))
         out.append(d)
     return {"items": out}
+
+
+@app.get("/api/docs/documents/{doc_id}")
+def docs_detail(doc_id: int, session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Session = Depends(get_db)):
+    acc, err = _require(db, session, "docs")
+    if err:
+        return err
+    doc = db.get(Document, doc_id)
+    if not doc or doc.account_id != acc.id:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    d = _dump(doc, DOC_F)
+    steps = _steps_for(db, doc_id)
+    d["steps"] = [_dump(s, STEP_F) for s in steps]
+    d["route"] = _route_summary(steps)
+    d["acks"] = db.execute(select(func.count(Acknowledgement.id)).where(
+        Acknowledgement.document_id == doc_id)).scalar()
+    return d
 
 
 @app.post("/api/docs/documents")
@@ -948,7 +1060,126 @@ def docs_add(body: DocIn, session: str | None = Cookie(default=None, alias=COOKI
     d = Document(account_id=acc.id, **body.model_dump())
     db.add(d); db.commit()
     out = _dump(d, DOC_F); out["acks"] = 0
+    out["route"] = _route_summary([])
     return out
+
+
+class StepIn(BaseModel):
+    role: str
+    name: str = ""
+    email: str = ""
+
+
+class RouteIn(BaseModel):
+    steps: list[StepIn]
+
+
+@app.post("/api/docs/documents/{doc_id}/route")
+def docs_route(doc_id: int, body: RouteIn, session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Session = Depends(get_db)):
+    """Send a material for approval: define the ordered sign-off route and
+    move it into review. The first role's step is activated immediately."""
+    acc, err = _require(db, session, "docs")
+    if err:
+        return err
+    doc = db.get(Document, doc_id)
+    if not doc or doc.account_id != acc.id:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    if doc.status == "In Review":
+        return JSONResponse({"error": "This material is already in review."}, status_code=400)
+    steps = [s for s in body.steps if (s.role or "").strip()]
+    if not steps:
+        return JSONResponse({"error": "Add at least one approval step."}, status_code=400)
+    # clear any prior route (e.g. re-sending after a rejection) and rebuild
+    for old in _steps_for(db, doc_id):
+        db.delete(old)
+    for i, s in enumerate(steps, start=1):
+        db.add(ApprovalStep(account_id=acc.id, document_id=doc_id, seq=i,
+                            role=s.role.strip(), assignee_name=(s.name or "").strip(),
+                            assignee_email=(s.email or "").strip(),
+                            status="active" if i == 1 else "pending"))
+    doc.status = "In Review"
+    doc.submitted_at = utcnow().isoformat()
+    doc.approved_at = ""
+    db.commit()
+    return docs_detail(doc_id, session, db)
+
+
+class SignIn(BaseModel):
+    signed_name: str
+    intent: str = ""
+    comment: str = ""
+
+
+@app.post("/api/docs/steps/{step_id}/sign")
+def docs_sign(step_id: int, body: SignIn, session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Session = Depends(get_db)):
+    """Apply an e-signature to the active step. Advances to the next role, or
+    marks the whole material Approved when the last role has signed."""
+    acc, err = _require(db, session, "docs")
+    if err:
+        return err
+    step = db.get(ApprovalStep, step_id)
+    if not step or step.account_id != acc.id:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    if step.status != "active":
+        return JSONResponse({"error": "This step is not awaiting signature."}, status_code=400)
+    if not (body.signed_name or "").strip():
+        return JSONResponse({"error": "Type your full name to sign."}, status_code=400)
+    step.status = "approved"
+    step.signed_name = body.signed_name.strip()
+    step.intent = (body.intent or "").strip()
+    step.comment = (body.comment or "").strip()
+    step.signed_at = utcnow().isoformat()
+    db.flush()
+    steps = _steps_for(db, step.document_id)
+    nxt = next((s for s in steps if s.status == "pending"), None)
+    doc = db.get(Document, step.document_id)
+    if nxt:
+        nxt.status = "active"
+    else:
+        doc.status = "Approved"
+        doc.approved_at = utcnow().isoformat()
+    db.commit()
+    return docs_detail(step.document_id, session, db)
+
+
+@app.post("/api/docs/steps/{step_id}/reject")
+def docs_reject(step_id: int, body: SignIn, session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Session = Depends(get_db)):
+    """Reject the active step. The material returns to Rejected; the author can
+    revise and re-route it for approval."""
+    acc, err = _require(db, session, "docs")
+    if err:
+        return err
+    step = db.get(ApprovalStep, step_id)
+    if not step or step.account_id != acc.id:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    if step.status != "active":
+        return JSONResponse({"error": "This step is not awaiting signature."}, status_code=400)
+    step.status = "rejected"
+    step.signed_name = (body.signed_name or "").strip()
+    step.comment = (body.comment or "").strip()
+    step.signed_at = utcnow().isoformat()
+    doc = db.get(Document, step.document_id)
+    doc.status = "Rejected"
+    db.commit()
+    return docs_detail(step.document_id, session, db)
+
+
+@app.post("/api/docs/documents/{doc_id}/reset")
+def docs_reset(doc_id: int, session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Session = Depends(get_db)):
+    """Withdraw / revise: clear the route and return the material to Draft."""
+    acc, err = _require(db, session, "docs")
+    if err:
+        return err
+    doc = db.get(Document, doc_id)
+    if not doc or doc.account_id != acc.id:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    for old in _steps_for(db, doc_id):
+        db.delete(old)
+    doc.status = "Draft"
+    doc.submitted_at = ""
+    doc.approved_at = ""
+    db.commit()
+    return docs_detail(doc_id, session, db)
 
 
 class AckIn(BaseModel):

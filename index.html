@@ -123,6 +123,17 @@
   .overlay{position:fixed;inset:0;background:rgba(8,20,18,.55);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:44px 16px;overflow:auto}
   .overlay.open{display:flex}
   .modal{background:#fff;border-radius:16px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);padding:28px;position:relative}
+  .modal.wide{max-width:620px}
+  .modal.wide input,.modal.wide select,.modal.wide textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 11px;font:inherit;font-size:13.5px;box-sizing:border-box}
+  .modal.wide input:focus,.modal.wide select:focus,.modal.wide textarea:focus{outline:none;border-color:var(--brand)}
+  .stepper{display:flex;flex-direction:column;gap:10px}
+  .stp{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+  .stp.done{background:#f6fbf8;border-color:#cdeadd}
+  .stp.act{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-050)}
+  .stp.rej{background:#fdf4f3;border-color:#f3cfca}
+  .stp.wait{background:var(--soft);opacity:.85}
+  .stp-h{display:flex;align-items:center;gap:8px;font-size:14.5px}
+  .stp-b{font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.5}
   .modal-x{position:absolute;top:14px;right:16px;font-size:24px;color:var(--muted);cursor:pointer;line-height:1}
   .modal h2{margin:0 0 4px;font-size:22px}
   .modal .swi{color:var(--muted);font-size:14px;margin:0 0 18px}.modal .swi a{color:var(--brand);font-weight:650;cursor:pointer}
@@ -165,6 +176,10 @@
       <button class="btn btn-primary btn-lg" style="width:100%" id="authSubmit">Create account</button>
     </form>
   </div>
+</div>
+
+<div class="overlay" id="docOverlay" onclick="if(event.target===this)closeDoc()">
+  <div class="modal wide" id="docModalBody"></div>
 </div>
 
 <script>
@@ -490,22 +505,162 @@ async function atsAddJob(){const b=readFields(["title","department","location"])
 /* ============================================================= *
  *  Docs
  * ============================================================= */
+let DOCROLES=null, CURDOC=null;
+async function loadRoles(){ if(!DOCROLES){ DOCROLES=(await api("/api/docs/roles")).data.roles||[]; } return DOCROLES; }
+function docPill(st){
+  const m={"Draft":["#eef2f7","#5b6b80"],"In Review":["#fff2e0","#b5730d"],"Approved":["#e7f8ef","#0b7a43"],"Rejected":["#fdecea","#c0392b"]};
+  const [bg,fg]=m[st]||m["Draft"];
+  return `<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;background:${bg};color:${fg}">${esc(st)}</span>`;
+}
 async function viewDocs(){
   const s=(await api("/api/docs/summary")).data;
   $("#main").innerHTML=`
-    <div class="page-h"><div><h1>📄 Document Center</h1><p>Shared documents and policy acknowledgements.</p></div></div>
-    <div class="stats">${stat(s.documents,"Documents")}${stat(s.acknowledgements,"Acknowledgements")}${stat(s.expired,"Expired")}</div>
+    <div class="page-h"><div><h1>📄 Document Center</h1><p>Controlled documents &amp; material approval — route each material for role-based e-signature sign-off.</p></div></div>
+    <div class="stats">${stat(s.documents,"Materials")}${stat(s.in_review,"In review")}${stat(s.approved,"Approved")}${stat(s.expired,"Expiring")}</div>
     <div id="docsbody"></div>`;
   const rows=(await api("/api/docs/documents")).data.items;
-  $("#docsbody").innerHTML=tableView({title:"Documents",rows,cols:[
-    {key:"title",label:"Title"},{key:"category",label:"Category"},{key:"expires",label:"Expires"},
-    {key:"acks",label:"Acks",fmt:v=>`${v}`}],
-    actions:r=>`<button class="btn btn-ghost btn-sm" onclick="docAck(${r.id})">Acknowledge</button>`,
-    addFields:[{key:"title",ph:"Document title"},{key:"category",type:"select",opts:["Policy","SOP","Contract","Handbook","Other"]},{key:"expires",ph:"Expiry",type:"date"}],
+  $("#docsbody").innerHTML=tableView({title:"Materials",rows,cols:[
+    {key:"title",label:"Title"},{key:"category",label:"Type"},
+    {key:"status",label:"Status",fmt:v=>docPill(v)},
+    {key:"route",label:"Approvals",fmt:(v,r)=>v&&v.steps?`${v.approved}/${v.steps}${v.current_role?` · <span style="color:var(--muted)">${esc(v.current_role)}</span>`:''}`:'<span style="color:var(--muted)">—</span>'},
+    {key:"expires",label:"Expires"}],
+    actions:r=>`<button class="btn btn-ghost btn-sm" onclick="openDoc(${r.id})">Open</button>`,
+    addFields:[{key:"title",ph:"Material title"},{key:"category",type:"select",opts:["Material","SOP","Policy","Label / SmPC","Patient leaflet","Training","Other"]},{key:"expires",ph:"Expiry",type:"date"}],
     onAdd:"docAdd()"});
 }
 async function docAdd(){const b=readFields(["title","category","expires"]);if(!b.title)return toast("Title required");const{ok}=await api("/api/docs/documents",{method:"POST",body:JSON.stringify(b)});ok&&viewDocs();}
 async function docAck(id){const who=ME.name||ME.email;await api("/api/docs/ack",{method:"POST",body:JSON.stringify({document_id:id,who})});toast("Acknowledged ✓");viewDocs();}
+
+/* ---------- material approval (DocuSign-style sign-off) ---------- */
+async function openDoc(id){
+  await loadRoles();
+  CURDOC=(await api("/api/docs/documents/"+id)).data;
+  renderDocModal();
+  $("#docOverlay").classList.add("open");
+}
+function closeDoc(){ $("#docOverlay").classList.remove("open"); CURDOC=null; }
+function fmtWhen(s){ return s?new Date(s).toLocaleString():''; }
+
+function roleOptions(sel){
+  const opts=DOCROLES.map(r=>`<option ${r.role===sel?'selected':''}>${esc(r.role)}</option>`).join("");
+  return opts;
+}
+function stepRowHTML(role="",name="",email=""){
+  return `<div class="rstep" style="display:grid;grid-template-columns:1.2fr 1fr 1fr 30px;gap:8px;align-items:center;margin-bottom:8px">
+    <select class="rrole">${roleOptions(role)}</select>
+    <input class="rname" placeholder="Approver name" value="${esc(name)}">
+    <input class="remail" placeholder="Email (optional)" value="${esc(email)}">
+    <button class="btn btn-ghost btn-sm" title="Remove" onclick="this.closest('.rstep').remove()">✕</button>
+  </div>`;
+}
+function addStepRow(){ $("#routeRows").insertAdjacentHTML("beforeend", stepRowHTML(DOCROLES[0]?.role||"")); }
+
+function renderDocModal(){
+  const d=CURDOC; if(!d) return;
+  const body=(d.body||"").trim();
+  const preview=body?`<div style="background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--ink-2);max-height:120px;overflow:auto;white-space:pre-wrap">${esc(body.slice(0,600))}${body.length>600?'…':''}</div>`:'';
+  let section="";
+  if(d.status==="Draft"||d.status==="Rejected"){
+    const rej=(d.steps||[]).find(s=>s.status==="rejected");
+    const rejbanner=(d.status==="Rejected"&&rej)?`<div class="err" style="display:block">Rejected by ${esc(rej.signed_name||rej.role)}${rej.comment?` — “${esc(rej.comment)}”`:''}. Revise and re-send below.</div>`:'';
+    // seed default pharma route when nothing set yet
+    const seed=["Regulatory Affairs","Pharmacovigilance (QPPV)","Management"];
+    const rows=seed.map(r=>stepRowHTML(r)).join("");
+    section=`${rejbanner}
+      <h3 style="margin:18px 0 6px;font-size:15px">Send for approval</h3>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Add the roles that must sign off, in order. Each approver signs after the previous one.</p>
+      <div id="routeRows">${rows}</div>
+      <button class="btn btn-ghost btn-sm" onclick="addStepRow()">＋ Add role</button>
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn btn-primary" onclick="submitRoute(${d.id})">🖊 Send for approval</button>
+        <button class="btn btn-ghost" onclick="closeDoc()">Cancel</button>
+      </div>`;
+  } else if(d.status==="In Review"){
+    section=`<h3 style="margin:18px 0 10px;font-size:15px">Approval route</h3>
+      <div class="stepper">${(d.steps||[]).map(s=>stepView(s)).join("")}</div>
+      <div style="margin-top:16px"><button class="btn btn-ghost btn-sm" onclick="resetRoute(${d.id})">Withdraw &amp; revise</button></div>`;
+  } else if(d.status==="Approved"){
+    section=`<div style="background:linear-gradient(120deg,#0d1b1a,#12403a);color:#fff;border-radius:14px;padding:18px 20px;margin:16px 0">
+        <div style="font-size:15px;font-weight:800">✓ Approved material</div>
+        <div style="opacity:.85;font-size:13px;margin-top:2px">Fully signed off on ${fmtWhen(d.approved_at)} · version ${d.version||1}</div>
+      </div>
+      <h3 style="margin:6px 0 10px;font-size:15px">Signature manifest</h3>
+      <div class="stepper">${(d.steps||[]).map(s=>stepView(s)).join("")}</div>
+      <div style="margin-top:16px"><button class="btn btn-ghost btn-sm" onclick="resetRoute(${d.id})">Start a new revision</button></div>`;
+  }
+  $("#docModalBody").innerHTML=`
+    <span class="modal-x" onclick="closeDoc()">×</span>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0;font-size:20px">${esc(d.title)}</h2>${docPill(d.status)}
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin:6px 0 12px">${esc(d.category||'Material')}${d.expires?` · expires ${esc(d.expires)}`:''}</p>
+    ${preview}
+    ${section}`;
+}
+function stepView(s){
+  const icon={approved:"✅",active:"✍️",pending:"⏳",rejected:"⛔"}[s.status]||"•";
+  if(s.status==="approved"){
+    return `<div class="stp done">
+      <div class="stp-h">${icon} <b>${esc(s.role)}</b> <span class="pill Approved">Signed</span></div>
+      <div class="stp-b">Signed by <b>${esc(s.signed_name||s.assignee_name)}</b> · ${fmtWhen(s.signed_at)}<br>
+        <span style="color:var(--ink-2)">“${esc(s.intent||'Approved.')}”</span>${s.comment?`<br><span style="color:var(--muted)">Note: ${esc(s.comment)}</span>`:''}</div></div>`;
+  }
+  if(s.status==="rejected"){
+    return `<div class="stp rej">
+      <div class="stp-h">${icon} <b>${esc(s.role)}</b> <span class="pill Rejected">Rejected</span></div>
+      <div class="stp-b">${esc(s.signed_name||s.assignee_name)} · ${fmtWhen(s.signed_at)}${s.comment?`<br>“${esc(s.comment)}”`:''}</div></div>`;
+  }
+  if(s.status==="active"){
+    const preset=(DOCROLES.find(r=>r.role===s.role)||{}).intent||"";
+    return `<div class="stp act">
+      <div class="stp-h">${icon} <b>${esc(s.role)}</b> <span class="pill Offer">Awaiting signature</span></div>
+      <div class="stp-b">
+        <p style="margin:2px 0 10px;color:var(--ink-2)">Assigned to ${esc(s.assignee_name||'—')}${s.assignee_email?` · ${esc(s.assignee_email)}`:''}</p>
+        <label style="font-size:12px;font-weight:700;color:var(--muted)">Signed by (type full name)</label>
+        <input id="sg_name" placeholder="Full name" value="${esc(s.assignee_name||'')}" style="margin:4px 0 10px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted)">Meaning of signature</label>
+        <textarea id="sg_intent" rows="2" style="margin:4px 0 10px">${esc(preset)}</textarea>
+        <label style="font-size:12px;font-weight:700;color:var(--muted)">Comment (optional)</label>
+        <input id="sg_comment" placeholder="Optional note" style="margin:4px 0 12px">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="signStep(${s.id})">🖊 Apply e-signature</button>
+          <button class="btn btn-ghost btn-sm" onclick="rejectStep(${s.id})">Reject</button>
+        </div>
+        <p style="font-size:11.5px;color:var(--muted);margin:10px 0 0">By signing you confirm this is your legally binding electronic signature, stamped with your name and the date &amp; time.</p>
+      </div></div>`;
+  }
+  return `<div class="stp wait">
+    <div class="stp-h">${icon} <b>${esc(s.role)}</b> <span class="pill Pending">Waiting</span></div>
+    <div class="stp-b" style="color:var(--muted)">Assigned to ${esc(s.assignee_name||'—')} — signs after the step above.</div></div>`;
+}
+async function submitRoute(id){
+  const steps=[...document.querySelectorAll("#routeRows .rstep")].map(r=>({
+    role:r.querySelector(".rrole").value, name:r.querySelector(".rname").value.trim(), email:r.querySelector(".remail").value.trim()
+  })).filter(s=>s.role);
+  if(!steps.length) return toast("Add at least one role");
+  const {ok,data}=await api("/api/docs/documents/"+id+"/route",{method:"POST",body:JSON.stringify({steps})});
+  if(!ok) return toast(data.error||"Could not send");
+  CURDOC=data; renderDocModal(); toast("Sent for approval ✓"); viewDocs();
+}
+async function signStep(sid){
+  const b={signed_name:$("#sg_name").value.trim(), intent:$("#sg_intent").value.trim(), comment:$("#sg_comment").value.trim()};
+  if(!b.signed_name) return toast("Type your full name to sign");
+  const {ok,data}=await api("/api/docs/steps/"+sid+"/sign",{method:"POST",body:JSON.stringify(b)});
+  if(!ok) return toast(data.error||"Could not sign");
+  CURDOC=data; renderDocModal(); toast(data.status==="Approved"?"Material approved ✓":"Signed ✓"); viewDocs();
+}
+async function rejectStep(sid){
+  const reason=prompt("Reason for rejection (optional):")||"";
+  const b={signed_name:($("#sg_name").value||"").trim(), comment:reason.trim()};
+  const {ok,data}=await api("/api/docs/steps/"+sid+"/reject",{method:"POST",body:JSON.stringify(b)});
+  if(!ok) return toast(data.error||"Could not reject");
+  CURDOC=data; renderDocModal(); toast("Rejected"); viewDocs();
+}
+async function resetRoute(id){
+  const {ok,data}=await api("/api/docs/documents/"+id+"/reset",{method:"POST"});
+  if(!ok) return toast(data.error||"Error");
+  CURDOC=data; renderDocModal(); viewDocs();
+}
 
 const ROUTES={dashboard:renderDashboard,store:renderStore,crm:viewCRM,hr:viewHR,ats:viewATS,docs:viewDocs};
 
