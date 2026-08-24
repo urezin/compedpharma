@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CompedPharma — Modular CRM &amp; HR</title>
+<meta name="description" content="A modular CRM + HR platform. Activate only the modules you need — CRM, HR, Recruiting, and Document Center.">
+<style>
+  :root{
+    --ink:#0d1b1a;--ink-2:#38514e;--muted:#6a807d;--line:#e2eae8;
+    --bg:#fff;--soft:#f2f7f6;--brand:#0e9c8a;--brand-700:#0b7c6e;--brand-050:#e6f6f3;
+    --accent:#1f6feb;--danger:#e0523f;--gold:#f5a623;--green:#0f9d58;
+    --radius:14px;--shadow:0 1px 2px rgba(13,27,26,.06),0 8px 24px rgba(13,27,26,.07);
+    --shadow-lg:0 14px 44px rgba(13,27,26,.16);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--font);color:var(--ink);background:var(--soft);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;font-family:inherit;
+    font-weight:650;font-size:14.5px;border-radius:10px;padding:10px 16px;transition:.15s;line-height:1}
+  .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-700)}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn-ghost:hover{border-color:var(--ink-2)}
+  .btn-sm{padding:7px 12px;font-size:13px}
+  .btn-lg{padding:13px 22px;font-size:15px}
+  .btn:disabled{opacity:.55;cursor:default}
+  input,select,textarea{font-family:inherit;font-size:14px}
+
+  /* ---------- top bar ---------- */
+  header{height:60px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    gap:16px;padding:0 22px;position:sticky;top:0;z-index:30}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:820;font-size:19px;letter-spacing:-.4px}
+  .logo .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#3ad0b6);
+    display:grid;place-items:center;color:#fff;font-size:15px}
+  .logo b{color:var(--brand)}
+  .spacer{flex:1}
+  .acct{position:relative}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--brand-050);color:var(--brand-700);
+    display:grid;place-items:center;font-weight:800;cursor:pointer;border:1px solid var(--line)}
+  .menu{position:absolute;right:0;top:46px;background:#fff;border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow-lg);min-width:220px;padding:8px;display:none}
+  .menu.open{display:block}.menu .mi{display:block;padding:9px 12px;border-radius:8px;font-size:14px;cursor:pointer}
+  .menu .mi:hover{background:var(--soft)}.menu .sep{height:1px;background:var(--line);margin:6px 4px}
+
+  /* ---------- shell ---------- */
+  .shell{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 60px)}
+  .side{background:#fff;border-right:1px solid var(--line);padding:16px 12px}
+  .side .grp{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:14px 8px 6px;font-weight:750}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14.5px;color:var(--ink-2)}
+  .nav-item:hover{background:var(--soft)}
+  .nav-item.active{background:var(--brand-050);color:var(--brand-700)}
+  .nav-item .ico{width:22px;text-align:center}
+  .nav-item.locked{color:var(--muted)}
+  .nav-item .lk{margin-left:auto;font-size:12px;opacity:.6}
+  main{padding:26px 30px;max-width:1180px}
+  .page-h{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .page-h h1{font-size:26px;letter-spacing:-.5px;margin:0}
+  .page-h p{margin:4px 0 0;color:var(--muted);font-size:14.5px}
+
+  /* ---------- cards / stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .stat .v{font-size:28px;font-weight:820;letter-spacing:-.5px}
+  .stat .k{font-size:13px;color:var(--muted);margin-top:2px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .panel-h h3{margin:0;font-size:16px}
+  .panel-b{padding:6px 0}
+  .subtabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .subtab{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 15px;font-size:13.5px;font-weight:650;color:var(--ink-2);cursor:pointer}
+  .subtab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:10px 18px;border-bottom:1px solid var(--line)}
+  td{padding:11px 18px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  .pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700}
+  .pill.Lead,.pill.Applied,.pill.Pending{background:#eef2f7;color:#5b6b80}
+  .pill.Qualified,.pill.Screen{background:#e9f0ff;color:#2b57c9}
+  .pill.Proposal,.pill.Interview{background:#fff2e0;color:#b5730d}
+  .pill.Won,.pill.Hired,.pill.Approved,.pill.Active{background:#e7f8ef;color:#0b7a43}
+  .pill.Lost,.pill.Rejected,.pill.Declined{background:#fdecea;color:#c0392b}
+  .pill.Offer{background:#efe7ff;color:#6b3fd4}
+  select.mini{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-weight:650;font-size:12.5px;background:#fff;cursor:pointer}
+  .empty{padding:26px 18px;color:var(--muted);text-align:center;font-size:14px}
+
+  /* inline add form */
+  .addbar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;background:var(--soft);border-top:1px solid var(--line)}
+  .addbar input,.addbar select{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 11px;min-width:120px;flex:1}
+  .addbar textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
+
+  /* ---------- module store ---------- */
+  .mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+  .mod{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .mod.owned{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand-050)}
+  .mod .ic{font-size:34px}
+  .mod h3{margin:10px 0 4px;font-size:18px}
+  .mod .tl{color:var(--muted);font-size:14px;margin:0 0 12px}
+  .mod ul{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:7px}
+  .mod li{font-size:13.5px;color:var(--ink-2);display:flex;gap:8px}
+  .mod li .ck{color:var(--green);font-weight:900}
+  .mod .price{font-weight:820;font-size:22px;margin-bottom:14px}
+  .mod .price small{font-size:13px;color:var(--muted);font-weight:600}
+  .mod .btn{margin-top:auto}
+  .owned-tag{display:inline-flex;align-items:center;gap:6px;color:var(--brand-700);font-weight:750;font-size:14px}
+  .bundle{background:linear-gradient(120deg,#0d1b1a,#12403a);color:#fff;border-radius:16px;padding:24px;display:flex;
+    align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+  .bundle h3{margin:0 0 4px;font-size:20px}.bundle p{margin:0;color:#bfe0d9;font-size:14.5px}
+  .bundle .price{font-size:26px;font-weight:850}
+
+  /* ---------- auth / landing ---------- */
+  .land{max-width:1120px;margin:0 auto;padding:40px 22px}
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:30px 0 50px}
+  .hero h1{font-size:44px;line-height:1.08;letter-spacing:-1.2px;margin:0 0 16px}
+  .hero h1 span{color:var(--brand)}
+  .hero p{font-size:18px;color:var(--ink-2);margin:0 0 24px;max-width:40ch}
+  .hero-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-lg);padding:22px}
+  .hero-card .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-weight:600}
+  .hero-card .row:first-of-type{border-top:0}
+  .hero-card .row .i{width:34px;height:34px;border-radius:9px;background:var(--brand-050);display:grid;place-items:center;font-size:18px}
+
+  .overlay{position:fixed;inset:0;background:rgba(8,20,18,.55);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:44px 16px;overflow:auto}
+  .overlay.open{display:flex}
+  .modal{background:#fff;border-radius:16px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);padding:28px;position:relative}
+  .modal-x{position:absolute;top:14px;right:16px;font-size:24px;color:var(--muted);cursor:pointer;line-height:1}
+  .modal h2{margin:0 0 4px;font-size:22px}
+  .modal .swi{color:var(--muted);font-size:14px;margin:0 0 18px}.modal .swi a{color:var(--brand);font-weight:650;cursor:pointer}
+  .field{margin-bottom:12px}.field label{display:block;font-size:13px;font-weight:650;margin-bottom:5px;color:var(--ink-2)}
+  .field input{width:100%;height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px}
+  .field input:focus,.addbar input:focus,.addbar select:focus{outline:none;border-color:var(--brand)}
+  .err{background:#fdecea;color:#c0392b;border-radius:8px;padding:9px 12px;font-size:13.5px;margin-bottom:12px;display:none}
+  .err.show{display:block}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;box-shadow:var(--shadow-lg);z-index:80;display:none}
+  .toast.show{display:block}
+  .lockbox{background:#fff;border:1px dashed var(--line);border-radius:16px;padding:40px;text-align:center;box-shadow:var(--shadow)}
+  .lockbox .ic{font-size:40px}
+  .lockbox h2{margin:12px 0 6px}.lockbox p{color:var(--muted);margin:0 0 18px}
+  @media(max-width:820px){.shell{grid-template-columns:1fr}.side{display:none}.hero{grid-template-columns:1fr}.hero-card{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="/"><span class="mark">C</span>Comped<b>Pharma</b></a>
+  <div class="spacer"></div>
+  <div id="topauth"></div>
+</header>
+
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+
+<!-- auth modal -->
+<div class="overlay" id="authOverlay" onclick="if(event.target===this)closeAuth()">
+  <div class="modal">
+    <span class="modal-x" onclick="closeAuth()">×</span>
+    <h2 id="authTitle">Create your account</h2>
+    <p class="swi" id="authSwitch"></p>
+    <div class="err" id="authErr"></div>
+    <form id="authForm" onsubmit="return submitAuth(event)">
+      <div class="field" id="nameField"><label>Your name</label><input id="f_name" type="text" placeholder="Jane Doe"></div>
+      <div class="field" id="orgField"><label>Organization</label><input id="f_org" type="text" placeholder="Acme Pharma"></div>
+      <div class="field"><label>Email</label><input id="f_email" type="email" required placeholder="you@company.com"></div>
+      <div class="field"><label>Password</label><input id="f_pass" type="password" required minlength="8" placeholder="••••••••"></div>
+      <button class="btn btn-primary btn-lg" style="width:100%" id="authSubmit">Create account</button>
+    </form>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+let ME=null, VIEW="dashboard", SUB={};
+
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),3000);}
+async function api(path,opts){const r=await fetch(path,Object.assign({headers:{"Content-Type":"application/json"}},opts));let j={};try{j=await r.json()}catch(e){}return{ok:r.ok,status:r.status,data:j};}
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=n=>"$"+Number(n||0).toLocaleString();
+const dateOf=s=>s?new Date(s).toLocaleDateString():"";
+
+async function boot(){
+  const {data}=await api("/api/me");
+  ME=data;
+  renderTop();
+  if(!ME.authenticated){ renderLanding(); handlePurchase(); return; }
+  if(!ROUTES[VIEW]) VIEW="dashboard";
+  renderShell(); handlePurchase();
+}
+
+/* ---------- top bar ---------- */
+function renderTop(){
+  const el=$("#topauth");
+  if(ME&&ME.authenticated){
+    const ini=(ME.name||ME.email||"?").slice(0,1).toUpperCase();
+    el.innerHTML=`<div class="acct"><div class="avatar" onclick="document.getElementById('acctMenu').classList.toggle('open')">${ini}</div>
+      <div class="menu" id="acctMenu">
+        <div style="padding:8px 12px;font-size:13px;color:var(--muted)">${esc(ME.email)}</div>
+        ${ME.org?`<div style="padding:0 12px 8px;font-size:13px;font-weight:600">${esc(ME.org)}</div>`:''}
+        <div class="sep"></div>
+        <div class="mi" onclick="go('store')">Manage modules</div>
+        <a class="mi" href="/api/logout">Log out</a>
+      </div></div>`;
+  } else {
+    el.innerHTML=`<button class="btn btn-ghost btn-sm" onclick="openAuth('login')">Log in</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuth('register')">Get started</button>`;
+  }
+}
+document.addEventListener("click",e=>{const m=$("#acctMenu");if(m&&!e.target.closest(".acct"))m.classList.remove("open");});
+
+/* ---------- landing (signed out) ---------- */
+function renderLanding(){
+  const mods=(ME.modules||[]);
+  $("#root").innerHTML=`
+  <div class="land">
+    <div class="hero">
+      <div>
+        <h1>Run your business on the <span>modules you actually need.</span></h1>
+        <p>CompedPharma is a modular CRM &amp; HR platform. Turn on CRM, HR, Recruiting, or the Document Center independently — and only pay for what you use.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-lg" onclick="openAuth('register')">Start free</button>
+          <button class="btn btn-ghost btn-lg" onclick="document.getElementById('modstore').scrollIntoView({behavior:'smooth'})">See modules</button>
+        </div>
+      </div>
+      <div class="hero-card">
+        ${mods.map(m=>`<div class="row"><span class="i">${m.icon}</span>${esc(m.name)}<span style="margin-left:auto;color:var(--muted);font-weight:600">$${m.price}/mo</span></div>`).join("")}
+      </div>
+    </div>
+    <div id="modstore">
+      <h2 style="font-size:26px;letter-spacing:-.5px;margin:10px 0 4px">Pick your modules</h2>
+      <p style="color:var(--muted);margin:0 0 20px">Each one works on its own. Add more any time.</p>
+      <div class="mods">${mods.map(m=>modCard(m,false)).join("")}</div>
+    </div>
+  </div>`;
+}
+function modCard(m, owned){
+  return `<div class="mod ${owned?'owned':''}">
+    <div class="ic">${m.icon}</div>
+    <h3>${esc(m.name)}</h3>
+    <p class="tl">${esc(m.tagline)}</p>
+    <ul>${m.features.map(f=>`<li><span class="ck">✓</span>${esc(f)}</li>`).join("")}</ul>
+    <div class="price">$${m.price}<small>/mo</small></div>
+    ${owned?'<span class="owned-tag">✓ Active</span>'
+      :`<button class="btn btn-primary" onclick="activate('${m.key}')">Activate module</button>`}
+  </div>`;
+}
+
+/* ---------- shell (signed in) ---------- */
+function renderShell(){
+  const owned=new Set(ME.owned||[]);
+  const mods=ME.modules||[];
+  const navOwned=mods.filter(m=>owned.has(m.key)).map(m=>navItem(m.key,m.icon,m.name,false)).join("");
+  const navLocked=mods.filter(m=>!owned.has(m.key)).map(m=>navItem(m.key,m.icon,m.name,true)).join("");
+  $("#root").innerHTML=`
+  <div class="shell">
+    <aside class="side">
+      <div class="grp">Overview</div>
+      ${navItem("dashboard","🏠","Dashboard",false)}
+      <div class="grp">Your modules</div>
+      ${navOwned||'<div style="padding:8px 12px;color:var(--muted);font-size:13px">None active yet</div>'}
+      ${navLocked?`<div class="grp">Available</div>${navLocked}`:''}
+      <div class="grp">Account</div>
+      ${navItem("store","🧩","Add modules",false)}
+    </aside>
+    <main id="main"></main>
+  </div>`;
+  renderView();
+}
+function navItem(key,ico,label,locked){
+  return `<div class="nav-item ${VIEW===key?'active':''} ${locked?'locked':''}" onclick="go('${key}')">
+    <span class="ico">${ico}</span>${esc(label)}${locked?'<span class="lk">🔒</span>':''}</div>`;
+}
+function go(v){VIEW=v;document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));renderShell();}
+
+function renderView(){
+  const owned=new Set(ME.owned||[]);
+  const main=$("#main");
+  if(VIEW==="dashboard") return renderDashboard();
+  if(VIEW==="store") return renderStore();
+  if(["crm","hr","ats","docs"].includes(VIEW)){
+    if(!owned.has(VIEW)) return renderLocked(VIEW);
+    return ROUTES[VIEW]();
+  }
+  main.innerHTML='<div class="empty">Not found.</div>';
+}
+
+/* ---------- dashboard ---------- */
+async function renderDashboard(){
+  const owned=ME.owned||[];
+  const mods=ME.modules||[];
+  let cards="";
+  for(const m of mods.filter(x=>owned.includes(x.key))){
+    const {data}=await api(`/api/${m.key}/summary`);
+    const bits=Object.entries(data).filter(([k,v])=>typeof v==="number").slice(0,3)
+      .map(([k,v])=>`<div><b style="font-size:20px">${v}</b> <span style="color:var(--muted);font-size:13px">${k.replace(/_/g,' ')}</span></div>`).join("");
+    cards+=`<div class="panel"><div class="panel-h"><h3>${m.icon} ${esc(m.name)}</h3><button class="btn btn-ghost btn-sm" onclick="go('${m.key}')">Open</button></div>
+      <div style="padding:16px 18px;display:flex;gap:26px;flex-wrap:wrap">${bits||'<span style="color:var(--muted)">No data yet</span>'}</div></div>`;
+  }
+  $("#main").innerHTML=`
+    <div class="page-h"><div><h1>Welcome${ME.name?', '+esc(ME.name.split(' ')[0]):''} 👋</h1>
+      <p>${owned.length?owned.length+' module'+(owned.length>1?'s':'')+' active':'No modules yet — activate one to get started.'}</p></div>
+      <button class="btn btn-primary" onclick="go('store')">＋ Add modules</button></div>
+    ${cards||`<div class="lockbox"><div class="ic">🧩</div><h2>No modules active</h2>
+      <p>Activate CRM, HR, Recruiting, or the Document Center to begin.</p>
+      <button class="btn btn-primary btn-lg" onclick="go('store')">Browse modules</button></div>`}`;
+}
+
+/* ---------- module store (signed in) ---------- */
+function renderStore(){
+  const owned=new Set(ME.owned||[]);
+  const mods=ME.modules||[];
+  $("#main").innerHTML=`
+    <div class="page-h"><div><h1>Modules</h1><p>Activate only what you need. Turn more on any time.</p></div></div>
+    ${ME.suite?'':`<div class="bundle"><div><h3>🚀 Full Suite</h3><p>Every module — CRM, HR, Recruiting &amp; Documents — in one plan.</p></div>
+      <div style="text-align:right"><div class="price">$${ME.suite_price}<small style="font-size:13px;color:#bfe0d9">/mo</small></div>
+      <button class="btn" style="background:#fff;color:var(--brand-700);margin-top:8px" onclick="activate('suite')">Get the Suite</button></div></div>`}
+    <div class="mods">${mods.map(m=>modCard(m,owned.has(m.key))).join("")}</div>`;
+}
+
+function renderLocked(key){
+  const m=(ME.modules||[]).find(x=>x.key===key)||{};
+  $("#main").innerHTML=`<div class="lockbox"><div class="ic">${m.icon||'🔒'}</div>
+    <h2>${esc(m.name||'Module')} isn't active</h2>
+    <p>${esc(m.tagline||'')}</p>
+    <button class="btn btn-primary btn-lg" onclick="activate('${key}')">Activate for $${m.price}/mo</button></div>`;
+}
+
+/* ---------- activate (buy or self-grant demo) ---------- */
+async function activate(key){
+  if(!ME.authenticated){ pending=key; openAuth('register'); return; }
+  if(ME.billing){
+    const {ok,data}=await api("/api/checkout",{method:"POST",body:JSON.stringify({module:key})});
+    if(ok&&data.url){ location.href=data.url; return; }
+    toast(data.error||"Couldn't start checkout."); return;
+  }
+  // billing off -> demo self-grant so the product is explorable
+  const {ok,data}=await api("/api/grant",{method:"POST",body:JSON.stringify({module:key})});
+  if(ok){ toast("Module activated ✓"); await refreshMe(); go(key==='suite'?'dashboard':key); }
+  else toast(data.error||"Couldn't activate.");
+}
+async function refreshMe(){ const {data}=await api("/api/me"); ME=data; renderTop(); }
+
+/* ============================================================= *
+ *  Generic module view builder
+ * ============================================================= */
+function stat(v,k){return `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`;}
+
+function tableView(cfg){
+  // cfg: {cols:[{key,label,fmt?}], rows, addFields:[{key,ph,type?,opts?}], onAdd, actions?(row)}
+  const head=cfg.cols.map(c=>`<th>${c.label}</th>`).join("")+(cfg.actions?'<th></th>':'');
+  const body=cfg.rows.length? cfg.rows.map(r=>{
+    const tds=cfg.cols.map(c=>`<td>${c.fmt?c.fmt(r[c.key],r):esc(r[c.key])}</td>`).join("");
+    return `<tr>${tds}${cfg.actions?`<td style="text-align:right">${cfg.actions(r)}</td>`:''}</tr>`;
+  }).join("") : `<tr><td colspan="${cfg.cols.length+(cfg.actions?1:0)}"><div class="empty">${cfg.empty||'Nothing here yet — add your first below.'}</div></td></tr>`;
+  const fields=cfg.addFields.map(f=>{
+    if(f.type==="select") return `<select id="af_${f.key}">${f.opts.map(o=>`<option>${o}</option>`).join("")}</select>`;
+    return `<input id="af_${f.key}" placeholder="${f.ph}" ${f.type?`type="${f.type}"`:''}>`;
+  }).join("");
+  return `<div class="panel"><div class="panel-h"><h3>${cfg.title}</h3><span style="color:var(--muted);font-size:13px">${cfg.rows.length} total</span></div>
+    <div style="overflow-x:auto"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    <div class="addbar">${fields}<button class="btn btn-primary btn-sm" onclick="${cfg.onAdd}">＋ Add</button></div></div>`;
+}
+function readFields(keys){const o={};keys.forEach(k=>{const el=$("#af_"+k);o[k]=el?el.value.trim():"";});return o;}
+
+/* ============================================================= *
+ *  CRM
+ * ============================================================= */
+async function viewCRM(){
+  const s=(await api("/api/crm/summary")).data;
+  SUB.crm=SUB.crm||"deals";
+  $("#main").innerHTML=`
+    <div class="page-h"><div><h1>📇 CRM</h1><p>Contacts, companies, pipeline and activity.</p></div></div>
+    <div class="stats">
+      ${stat(s.contacts,"Contacts")}${stat(s.companies,"Companies")}${stat(s.deals,"Deals")}
+      ${stat(money(s.pipeline&&s.pipeline.Won||0),"Won value")}</div>
+    <div class="subtabs">
+      ${["deals","contacts","companies","activities"].map(t=>`<div class="subtab ${SUB.crm===t?'active':''}" onclick="SUB.crm='${t}';viewCRM()">${t[0].toUpperCase()+t.slice(1)}</div>`).join("")}
+    </div>
+    <div id="crmbody"></div>`;
+  const b=$("#crmbody");
+  if(SUB.crm==="deals"){
+    const rows=(await api("/api/crm/deals")).data.items;
+    b.innerHTML=tableView({title:"Deals",rows,cols:[
+      {key:"title",label:"Deal"},{key:"company",label:"Company"},
+      {key:"value",label:"Value",fmt:v=>money(v)},
+      {key:"stage",label:"Stage",fmt:(v,r)=>`<select class="mini" onchange="crmDealStage(${r.id},this.value)">${s.stages.map(st=>`<option ${st===v?'selected':''}>${st}</option>`).join("")}</select>`}],
+      addFields:[{key:"title",ph:"Deal name"},{key:"company",ph:"Company"},{key:"value",ph:"Value",type:"number"},{key:"stage",type:"select",opts:s.stages}],
+      onAdd:"crmAddDeal()"});
+  } else if(SUB.crm==="contacts"){
+    const rows=(await api("/api/crm/contacts")).data.items;
+    b.innerHTML=tableView({title:"Contacts",rows,cols:[
+      {key:"name",label:"Name"},{key:"title",label:"Title"},{key:"company",label:"Company"},
+      {key:"email",label:"Email"},{key:"phone",label:"Phone"}],
+      addFields:[{key:"name",ph:"Full name"},{key:"title",ph:"Title"},{key:"company",ph:"Company"},{key:"email",ph:"Email"},{key:"phone",ph:"Phone"}],
+      onAdd:"crmAddContact()"});
+  } else if(SUB.crm==="companies"){
+    const rows=(await api("/api/crm/companies")).data.items;
+    b.innerHTML=tableView({title:"Companies",rows,cols:[
+      {key:"name",label:"Name"},{key:"industry",label:"Industry"},{key:"website",label:"Website"}],
+      addFields:[{key:"name",ph:"Company name"},{key:"industry",ph:"Industry"},{key:"website",ph:"Website"}],
+      onAdd:"crmAddCompany()"});
+  } else {
+    const rows=(await api("/api/crm/activities")).data.items;
+    b.innerHTML=tableView({title:"Activity log",rows,cols:[
+      {key:"kind",label:"Type"},{key:"subject",label:"Subject"},{key:"related",label:"Related to"},
+      {key:"created_at",label:"When",fmt:v=>dateOf(v)}],
+      addFields:[{key:"kind",type:"select",opts:["note","call","email","meeting"]},{key:"subject",ph:"Subject"},{key:"related",ph:"Related to"}],
+      onAdd:"crmAddActivity()"});
+  }
+}
+async function crmAddDeal(){const b=readFields(["title","company","value","stage"]);if(!b.title)return toast("Deal name required");b.value=parseFloat(b.value)||0;const{ok,data}=await api("/api/crm/deals",{method:"POST",body:JSON.stringify(b)});ok?viewCRM():toast(data.error||"Error");}
+async function crmDealStage(id,stage){await api(`/api/crm/deals/${id}/stage`,{method:"POST",body:JSON.stringify({stage})});toast("Stage updated");}
+async function crmAddContact(){const b=readFields(["name","title","company","email","phone"]);if(!b.name)return toast("Name required");const{ok}=await api("/api/crm/contacts",{method:"POST",body:JSON.stringify(b)});ok&&viewCRM();}
+async function crmAddCompany(){const b=readFields(["name","industry","website"]);if(!b.name)return toast("Name required");const{ok}=await api("/api/crm/companies",{method:"POST",body:JSON.stringify(b)});ok&&viewCRM();}
+async function crmAddActivity(){const b=readFields(["kind","subject","related"]);if(!b.subject)return toast("Subject required");const{ok}=await api("/api/crm/activities",{method:"POST",body:JSON.stringify(b)});ok&&viewCRM();}
+
+/* ============================================================= *
+ *  HR
+ * ============================================================= */
+async function viewHR(){
+  const s=(await api("/api/hr/summary")).data;
+  SUB.hr=SUB.hr||"employees";
+  $("#main").innerHTML=`
+    <div class="page-h"><div><h1>👥 HR</h1><p>Employees, time-off and onboarding.</p></div></div>
+    <div class="stats">${stat(s.employees,"Employees")}${stat(s.leave_pending,"Leave pending")}${stat(s.onboarding_open,"Onboarding open")}</div>
+    <div class="subtabs">${["employees","leave","onboarding"].map(t=>`<div class="subtab ${SUB.hr===t?'active':''}" onclick="SUB.hr='${t}';viewHR()">${t[0].toUpperCase()+t.slice(1)}</div>`).join("")}</div>
+    <div id="hrbody"></div>`;
+  const b=$("#hrbody");
+  if(SUB.hr==="employees"){
+    const rows=(await api("/api/hr/employees")).data.items;
+    b.innerHTML=tableView({title:"Employees",rows,cols:[
+      {key:"name",label:"Name"},{key:"role",label:"Role"},{key:"department",label:"Dept"},
+      {key:"start_date",label:"Start"},{key:"status",label:"Status",fmt:v=>`<span class="pill ${v}">${v}</span>`}],
+      addFields:[{key:"name",ph:"Name"},{key:"role",ph:"Role"},{key:"department",ph:"Department"},{key:"email",ph:"Email"},{key:"start_date",ph:"Start date",type:"date"}],
+      onAdd:"hrAddEmployee()"});
+  } else if(SUB.hr==="leave"){
+    const rows=(await api("/api/hr/leave")).data.items;
+    b.innerHTML=tableView({title:"Leave requests",rows,cols:[
+      {key:"employee",label:"Employee"},{key:"kind",label:"Type"},{key:"start_date",label:"From"},{key:"end_date",label:"To"},
+      {key:"status",label:"Status",fmt:v=>`<span class="pill ${v}">${v}</span>`}],
+      actions:r=>`<button class="btn btn-ghost btn-sm" onclick="hrLeave(${r.id},'Approved')">Approve</button> <button class="btn btn-ghost btn-sm" onclick="hrLeave(${r.id},'Declined')">Decline</button>`,
+      addFields:[{key:"employee",ph:"Employee"},{key:"kind",type:"select",opts:["Vacation","Sick","Personal","Parental"]},{key:"start_date",ph:"From",type:"date"},{key:"end_date",ph:"To",type:"date"}],
+      onAdd:"hrAddLeave()"});
+  } else {
+    const rows=(await api("/api/hr/onboarding")).data.items;
+    b.innerHTML=tableView({title:"Onboarding tasks",rows,cols:[
+      {key:"employee",label:"Employee"},{key:"task",label:"Task"},
+      {key:"done",label:"Done",fmt:(v,r)=>`<input type="checkbox" ${v?'checked':''} onchange="hrOnbToggle(${r.id})">`}],
+      addFields:[{key:"employee",ph:"Employee"},{key:"task",ph:"Task (e.g. Sign contract)"}],
+      onAdd:"hrAddOnboard()"});
+  }
+}
+async function hrAddEmployee(){const b=readFields(["name","role","department","email","start_date"]);if(!b.name)return toast("Name required");const{ok}=await api("/api/hr/employees",{method:"POST",body:JSON.stringify(b)});ok&&viewHR();}
+async function hrAddLeave(){const b=readFields(["employee","kind","start_date","end_date"]);if(!b.employee)return toast("Employee required");const{ok}=await api("/api/hr/leave",{method:"POST",body:JSON.stringify(b)});ok&&viewHR();}
+async function hrLeave(id,status){await api(`/api/hr/leave/${id}/status`,{method:"POST",body:JSON.stringify({status})});toast(status);viewHR();}
+async function hrAddOnboard(){const b=readFields(["employee","task"]);if(!b.task)return toast("Task required");const{ok}=await api("/api/hr/onboarding",{method:"POST",body:JSON.stringify(b)});ok&&viewHR();}
+async function hrOnbToggle(id){await api(`/api/hr/onboarding/${id}/toggle`,{method:"POST"});viewHR();}
+
+/* ============================================================= *
+ *  ATS
+ * ============================================================= */
+async function viewATS(){
+  const s=(await api("/api/ats/summary")).data;
+  SUB.ats=SUB.ats||"candidates";
+  $("#main").innerHTML=`
+    <div class="page-h"><div><h1>🧑‍💼 Recruiting</h1><p>Jobs and candidate pipeline.</p></div></div>
+    <div class="stats">${stat(s.open_jobs,"Open jobs")}${stat(s.candidates,"Candidates")}${stat((s.by_stage&&s.by_stage.Hired)||0,"Hired")}</div>
+    <div class="subtabs">${["candidates","jobs"].map(t=>`<div class="subtab ${SUB.ats===t?'active':''}" onclick="SUB.ats='${t}';viewATS()">${t[0].toUpperCase()+t.slice(1)}</div>`).join("")}</div>
+    <div id="atsbody"></div>`;
+  const b=$("#atsbody");
+  if(SUB.ats==="candidates"){
+    const rows=(await api("/api/ats/candidates")).data.items;
+    b.innerHTML=tableView({title:"Candidates",rows,cols:[
+      {key:"name",label:"Name"},{key:"job",label:"Job"},{key:"email",label:"Email"},
+      {key:"stage",label:"Stage",fmt:(v,r)=>`<select class="mini" onchange="atsStage(${r.id},this.value)">${s.stages.map(st=>`<option ${st===v?'selected':''}>${st}</option>`).join("")}</select>`}],
+      addFields:[{key:"name",ph:"Candidate name"},{key:"job",ph:"Job"},{key:"email",ph:"Email"},{key:"stage",type:"select",opts:s.stages}],
+      onAdd:"atsAddCandidate()"});
+  } else {
+    const rows=(await api("/api/ats/jobs")).data.items;
+    b.innerHTML=tableView({title:"Job postings",rows,cols:[
+      {key:"title",label:"Title"},{key:"department",label:"Dept"},{key:"location",label:"Location"},
+      {key:"status",label:"Status",fmt:v=>`<span class="pill ${v==='Open'?'Won':'Lost'}">${v}</span>`}],
+      addFields:[{key:"title",ph:"Job title"},{key:"department",ph:"Department"},{key:"location",ph:"Location"}],
+      onAdd:"atsAddJob()"});
+  }
+}
+async function atsAddCandidate(){const b=readFields(["name","job","email","stage"]);if(!b.name)return toast("Name required");const{ok}=await api("/api/ats/candidates",{method:"POST",body:JSON.stringify(b)});ok&&viewATS();}
+async function atsStage(id,stage){await api(`/api/ats/candidates/${id}/stage`,{method:"POST",body:JSON.stringify({stage})});toast("Stage updated");}
+async function atsAddJob(){const b=readFields(["title","department","location"]);if(!b.title)return toast("Title required");const{ok}=await api("/api/ats/jobs",{method:"POST",body:JSON.stringify(b)});ok&&viewATS();}
+
+/* ============================================================= *
+ *  Docs
+ * ============================================================= */
+async function viewDocs(){
+  const s=(await api("/api/docs/summary")).data;
+  $("#main").innerHTML=`
+    <div class="page-h"><div><h1>📄 Document Center</h1><p>Shared documents and policy acknowledgements.</p></div></div>
+    <div class="stats">${stat(s.documents,"Documents")}${stat(s.acknowledgements,"Acknowledgements")}${stat(s.expired,"Expired")}</div>
+    <div id="docsbody"></div>`;
+  const rows=(await api("/api/docs/documents")).data.items;
+  $("#docsbody").innerHTML=tableView({title:"Documents",rows,cols:[
+    {key:"title",label:"Title"},{key:"category",label:"Category"},{key:"expires",label:"Expires"},
+    {key:"acks",label:"Acks",fmt:v=>`${v}`}],
+    actions:r=>`<button class="btn btn-ghost btn-sm" onclick="docAck(${r.id})">Acknowledge</button>`,
+    addFields:[{key:"title",ph:"Document title"},{key:"category",type:"select",opts:["Policy","SOP","Contract","Handbook","Other"]},{key:"expires",ph:"Expiry",type:"date"}],
+    onAdd:"docAdd()"});
+}
+async function docAdd(){const b=readFields(["title","category","expires"]);if(!b.title)return toast("Title required");const{ok}=await api("/api/docs/documents",{method:"POST",body:JSON.stringify(b)});ok&&viewDocs();}
+async function docAck(id){const who=ME.name||ME.email;await api("/api/docs/ack",{method:"POST",body:JSON.stringify({document_id:id,who})});toast("Acknowledged ✓");viewDocs();}
+
+const ROUTES={dashboard:renderDashboard,store:renderStore,crm:viewCRM,hr:viewHR,ats:viewATS,docs:viewDocs};
+
+/* ---------- auth ---------- */
+let authMode="register",pending=null;
+function openAuth(mode){
+  authMode=mode;$("#authErr").classList.remove("show");
+  $("#authTitle").textContent=mode==="register"?"Create your account":"Welcome back";
+  $("#nameField").style.display=mode==="register"?"block":"none";
+  $("#orgField").style.display=mode==="register"?"block":"none";
+  $("#authSubmit").textContent=mode==="register"?"Create account":"Log in";
+  $("#authSwitch").innerHTML=mode==="register"?`Already have an account? <a onclick="openAuth('login')">Log in</a>`:`New here? <a onclick="openAuth('register')">Create an account</a>`;
+  $("#authOverlay").classList.add("open");
+}
+function closeAuth(){$("#authOverlay").classList.remove("open");}
+async function submitAuth(e){
+  e.preventDefault();const err=$("#authErr");err.classList.remove("show");
+  const email=$("#f_email").value.trim(),pass=$("#f_pass").value,name=$("#f_name").value.trim(),org=$("#f_org").value.trim();
+  const path=authMode==="register"?"/api/register":"/api/login";
+  const body=authMode==="register"?{email,password:pass,name,org}:{email,password:pass};
+  $("#authSubmit").disabled=true;
+  const {ok,data}=await api(path,{method:"POST",body:JSON.stringify(body)});
+  $("#authSubmit").disabled=false;
+  if(!ok){err.textContent=data.error||"Something went wrong.";err.classList.add("show");return false;}
+  closeAuth();
+  await boot();
+  if(pending){const p=pending;pending=null;activate(p);}
+  return false;
+}
+
+/* ---------- purchase return ---------- */
+async function handlePurchase(){
+  const u=new URL(location.href);if(u.searchParams.get("purchased")!=="1")return;
+  const sid=u.searchParams.get("session_id");history.replaceState({},"","/app");
+  if(!sid)return;
+  const {ok,data}=await api("/api/fulfill",{method:"POST",body:JSON.stringify({session_id:sid})});
+  if(ok&&data.ok){toast("Module activated ✓");await refreshMe();VIEW=data.module==="suite"?"dashboard":data.module;renderShell();}
+  else toast(data.error||"Couldn't confirm purchase.");
+}
+
+boot();
+</script>
+</body>
+</html>
