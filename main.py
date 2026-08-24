@@ -546,7 +546,9 @@ def grant(body: GrantIn, session: str | None = Cookie(default=None, alias=COOKIE
     if not acc:
         return JSONResponse({"error": "Please sign in."}, status_code=401)
     admin = os.getenv("ADMIN_TOKEN", "")
-    allow_self = os.getenv("ALLOW_SELF_GRANT", "1") == "1"
+    # Public self-serve grants are OFF: no free module access without payment.
+    # Only an admin token (owner provisioning) can grant without Stripe checkout.
+    allow_self = os.getenv("ALLOW_SELF_GRANT", "0") == "1"
     if admin and body.token != admin and not allow_self:
         return JSONResponse({"error": "Not authorized."}, status_code=403)
     if not (allow_self or (admin and body.token == admin)):

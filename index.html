@@ -339,18 +339,17 @@ function renderLocked(key){
     <button class="btn btn-primary btn-lg" onclick="activate('${key}')">Activate for $${m.price}/mo</button></div>`;
 }
 
-/* ---------- activate (buy or self-grant demo) ---------- */
+/* ---------- activate (paid checkout only — no free self-grant) ---------- */
 async function activate(key){
   if(!ME.authenticated){ pending=key; openAuth('register'); return; }
   if(ME.billing){
+    // Stripe Checkout collects a card before any access is granted.
     const {ok,data}=await api("/api/checkout",{method:"POST",body:JSON.stringify({module:key})});
     if(ok&&data.url){ location.href=data.url; return; }
     toast(data.error||"Couldn't start checkout."); return;
   }
-  // billing off -> demo self-grant so the product is explorable
-  const {ok,data}=await api("/api/grant",{method:"POST",body:JSON.stringify({module:key})});
-  if(ok){ toast("Module activated ✓"); await refreshMe(); go(key==='suite'?'dashboard':key); }
-  else toast(data.error||"Couldn't activate.");
+  // Billing not configured yet — no free access. Prompt to enable payments.
+  toast("Card payments aren't enabled yet — set up Stripe to activate modules.");
 }
 async function refreshMe(){ const {data}=await api("/api/me"); ME=data; renderTop(); }
 
