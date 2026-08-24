@@ -1,5 +1,5 @@
 """
-CompedPharma — a modular CRM + HR platform.
+CompePharma — a modular CRM + HR platform.
 
 Everything is organised as separately-sellable MODULES (crm, hr, ats, docs). An
 account can own any subset (bought individually via Stripe, or all at once with
@@ -25,7 +25,7 @@ from sqlalchemy.orm import (DeclarativeBase, Mapped, mapped_column, sessionmaker
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-APP_NAME = "CompedPharma"
+APP_NAME = "CompePharma"
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./compedpharma.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
