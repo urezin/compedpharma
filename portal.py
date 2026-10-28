@@ -942,6 +942,12 @@ def thumb(beat: str, seed: str):
 INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "9177237c1d4269414fc9178f1355df96")
 
 
+@router.get("/google59c51f9757a51fb0.html", response_class=PlainTextResponse, include_in_schema=False)
+def google_site_verification():
+    """Google Search Console ownership file (keep it: removing it unverifies the site)."""
+    return "google-site-verification: google59c51f9757a51fb0.html"
+
+
 @router.get(f"/{INDEXNOW_KEY}.txt", response_class=PlainTextResponse, include_in_schema=False)
 def indexnow_key():
     return INDEXNOW_KEY
