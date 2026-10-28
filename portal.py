@@ -366,7 +366,7 @@ a.hi,a.mi,.gc>a,.river>a,.mini>a,.ic>a{display:block;overflow:hidden}
 .cos b{color:#fff}.cos.up li span{font-weight:600;font-size:13.5px}.cos.up a:hover{color:#fff;text-decoration:underline}
 .hstrip{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:22px;border-top:3px solid var(--ink)}@media(max-width:700px){.hstrip{grid-template-columns:1fr}}
 .hstrip .mini h3{font-size:15.5px}
-.mods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:30px 26px;margin-top:16px}
+.mods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:34px 30px;margin-top:16px}
 @media(max-width:1200px){.mods{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.mods{grid-template-columns:1fr}}
 .mod{border-top:4px solid var(--c);padding-top:10px}.mh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .mh>a:first-child{font-weight:900;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
