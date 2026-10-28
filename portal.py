@@ -646,7 +646,7 @@ def home():
     bands, bands2 = mods_html, ""
     body = f"""{_beatbar("home")}{_trending(c)}{_ticker(c)}<main>
 <div class="wrap"><div class="front"><div>{hero(ld_)}<div class="hstrip">{"".join(mini(i) for i in riv[19:23])}</div></div>
-<div class="sec2">{"".join(gcard(i) for i in tops[:2])}</div>
+<div class="sec2">{"".join(gcard(i) for i in tops[:2])}{_most(c, used)}</div>
 <div class="latest"><div class="hd"><span>Latest</span></div>{"".join(f'<div class="lt"><span>{_e(_fmt(i.get("date", ""))[:6])}</span>{_label(i)}<h4>{_a(i, _e(i["title"]))}</h4></div>' for i in sorted(tops[2:] + riv[:7], key=lambda x: x.get("date", ""), reverse=True)[:8])}</div></div>
 </div>{_numbers(c)}{earn_html}{op_html}<div class="wrap">
 <div class="cols"><div><div class="hd"><span>More top stories</span></div>{"".join(river(i) for i in riv[7:19])}</div><aside><div class="stick">{_deal_tracker(c)}{_ad_box("home")}{_nl_box("home")}{_most(c, used)}{_coming_up(c)}{_vigieye_box()}</div></aside></div></div>
