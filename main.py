@@ -367,9 +367,9 @@ def _startup():
     _migrate()
 
 
-@app.get("/", include_in_schema=False)
-def home():
-    return FileResponse(os.path.join(_STATIC, "index.html"))
+# Public news portal (the business of pharma) is the homepage; the CRM/HR app lives at /app.
+import portal as _portal  # noqa: E402
+app.include_router(_portal.router)
 
 
 @app.get("/app", include_in_schema=False)
@@ -427,7 +427,7 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
 
 @app.get("/api/logout")
 def logout():
-    resp = RedirectResponse("/", status_code=302)
+    resp = RedirectResponse("/app", status_code=302)
     resp.delete_cookie(COOKIE_NAME, path="/")
     return resp
 
