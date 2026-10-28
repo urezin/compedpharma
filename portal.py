@@ -723,9 +723,30 @@ def thumb(beat: str, seed: str):
     return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=604800, immutable"})
 
 
+INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "9177237c1d4269414fc9178f1355df96")
+
+
+@router.get(f"/{INDEXNOW_KEY}.txt", response_class=PlainTextResponse, include_in_schema=False)
+def indexnow_key():
+    return INDEXNOW_KEY
+
+
 @router.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
 def robots():
-    return f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /app\nSitemap: {BASE}/sitemap.xml\n"
+    return (f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /app\nSitemap: {BASE}/sitemap.xml\n"
+            f"Sitemap: {BASE}/news-sitemap.xml\n")
+
+
+@router.get("/news-sitemap.xml", include_in_schema=False)
+def news_sitemap():
+    from datetime import timedelta
+    since = (date.today() - timedelta(days=2)).isoformat()
+    arts = [a for a in (_load().get("insights") or []) if (a.get("date") or "") >= since]
+    body = "".join(f"<url><loc>{_e(BASE)}/insights/{_e(a['slug'])}</loc><news:news><news:publication><news:name>CompePharma</news:name>"
+                   f"<news:language>en</news:language></news:publication><news:publication_date>{_e(a.get('date'))}</news:publication_date>"
+                   f"<news:title>{_e(a['title'])}</news:title></news:news></url>" for a in arts)
+    return Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+                    f'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">{body}</urlset>', media_type="application/xml")
 
 
 @router.get("/sitemap.xml", include_in_schema=False)
