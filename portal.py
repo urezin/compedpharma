@@ -50,7 +50,7 @@ BEAT_BLURB = {
     "industry": "Everything else moving the pharma business.",
 }
 
-PQRA = {"cta_url": "https://calendly.com/dgkikas/30min", "site": "https://www.pqra.gr/"}
+PQRA = {"cta_url": "https://www.pqra.gr/", "site": "https://www.pqra.gr/"}
 
 _cache: dict = {"t": 0.0, "items": [], "editorial": [], "ticker": [], "error": None}
 _lock = threading.Lock()
@@ -209,21 +209,21 @@ def _ad_box(place: str) -> str:
     u = f'{PQRA["cta_url"]}?utm_source=compepharma&utm_medium=house_ad&utm_campaign=pqra&utm_content={place}'
     s = f'{PQRA["site"]}?utm_source=compepharma&utm_medium=house_ad&utm_campaign=pqra&utm_content={place}'
     return (f'<aside class="box ad" aria-label="Advertisement"><span class="tag">Advertisement</span><div class="logo">PQRA</div>'
-            f'<p style="font-weight:700;margin-top:6px">Regulatory, quality and pharmacovigilance consulting for Greece &amp; Cyprus</p>'
+            f'<p style="font-weight:700;margin-top:6px">Regulatory, quality and pharmacovigilance consulting for the pharmaceutical industry</p>'
             f'<ul><li style="border:0;padding:2px 0;font-weight:500">Regulatory affairs &amp; market access</li>'
             f'<li style="border:0;padding:2px 0;font-weight:500">Quality management &amp; audit readiness</li>'
             f'<li style="border:0;padding:2px 0;font-weight:500">Pharmacovigilance &amp; medical information</li></ul>'
             f'<p class="by">25+ years with EOF and EMA · human and veterinary medicines</p>'
-            f'<p style="margin-top:10px"><a class="btn" href="{_e(u)}" target="_blank" rel="noopener sponsored">Book a 30-minute call</a></p>'
+            f'<p style="margin-top:10px"><a class="btn" href="{_e(u)}" target="_blank" rel="noopener sponsored">Visit pqra.gr</a></p>'
             f'<p class="by"><a href="{_e(s)}" target="_blank" rel="noopener sponsored">pqra.gr</a> · info@pqra.gr</p></aside>')
 
 
 def _ad_banner(place: str) -> str:
     u = f'{PQRA["cta_url"]}?utm_source=compepharma&utm_medium=house_ad&utm_campaign=pqra&utm_content={place}'
     return (f'<aside class="box ad banner" aria-label="Advertisement"><span class="tag">Advertisement</span><div><div class="logo">PQRA</div>'
-            f'<p style="font-weight:700">Entering Greece or Cyprus? Regulatory, quality and pharmacovigilance support from people who know EOF.</p>'
+            f'<p style="font-weight:700">Regulatory, quality and pharmacovigilance support, backed by 25+ years with EOF and EMA.</p>'
             f'<p class="by">Marketing authorisations · QMS &amp; GMP/GDP audit readiness · local PV &amp; medical information</p></div>'
-            f'<a class="btn" href="{_e(u)}" target="_blank" rel="noopener sponsored">Book a 30-minute call</a></aside>')
+            f'<a class="btn" href="{_e(u)}" target="_blank" rel="noopener sponsored">Visit pqra.gr</a></aside>')
 
 
 def _vigieye_box() -> str:
