@@ -361,7 +361,9 @@ a.hi,a.mi,.gc>a,.river>a,.mini>a,.ic>a{display:block;overflow:hidden}
 .cos{list-style:none;counter-reset:c}.cos li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1d222d;font-size:14px}
 .cos li:before{counter-increment:c;content:counter(c);font:900 20px/1 var(--sans);color:var(--red);width:22px}
 .cos li span{flex:1;font-weight:700}.cos code,.dtr code{font:700 11.5px/1 ui-monospace,monospace;background:#1f2937;color:#e5e7eb;padding:3px 6px;border-radius:3px}
-.cos b{color:#fff}
+.cos b{color:#fff}.cos.up li span{font-weight:600;font-size:13.5px}.cos.up a:hover{color:#fff;text-decoration:underline}
+.hstrip{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:22px;border-top:3px solid var(--ink)}@media(max-width:700px){.hstrip{grid-template-columns:1fr}}
+.hstrip .mini h3{font-size:15.5px}
 .mods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:30px 26px;margin-top:16px}
 @media(max-width:1200px){.mods{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.mods{grid-template-columns:1fr}}
 .mod{border-top:4px solid var(--c);padding-top:10px}.mh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
@@ -535,9 +537,15 @@ def _numbers(c: dict) -> str:
             co[key] = co.get(key, 0) + 1
     tc = sorted(co.items(), key=lambda x: -x[1])[:6]
     cos = "".join(f'<li><span>{_e(p)}</span>{f"<code>{_e(t)}</code>" if t else ""}<b>{n}</b></li>' for (p, t), n in tc)
+    if tc and tc[0][1] >= 2:
+        right = f'<h4>Most-covered companies · 30 days</h4><ol class="cos">{cos}</ol>'
+    else:
+        up = (c.get("ticker") or [])[:6]
+        right = ('<h4>Coming up · FDA decision dates</h4><ol class="cos up">' + "".join(
+            f'<li><span><a href="{_e(i["url"])}">{_e(i["title"])}</a></span><code>{_e(_fmt(i["date"])[:6])}</code></li>' for i in up) + '</ol>') if up else ""
     return (f'<section class="nums"><div class="wrap"><div class="hd"><span>By the numbers</span><em class="live">● Live from today\'s coverage</em></div>'
             f'<div class="ntg">{"".join(cells)}</div><div class="nrow"><div class="nbox"><h4>Coverage by section · 30 days</h4>{bars}</div>'
-            f'<div class="nbox"><h4>Most-covered companies · 30 days</h4><ol class="cos">{cos}</ol></div></div></div></section>')
+            f'<div class="nbox">{right}</div></div></div></section>')
 
 
 def _trending(c: dict) -> str:
@@ -634,13 +642,13 @@ def home():
     mods_html = (f'<section class="band"><div class="wrap"><div class="hd"><span>Sections</span></div><div class="mods">{mods}</div></div></section>') if mods else ""
     bands, bands2 = mods_html, ""
     body = f"""{_beatbar("home")}{_trending(c)}{_ticker(c)}<main>
-<div class="wrap"><div class="front"><div>{hero(ld_)}</div>
+<div class="wrap"><div class="front"><div>{hero(ld_)}<div class="hstrip">{"".join(mini(i) for i in riv[19:23])}</div></div>
 <div class="sec2">{"".join(gcard(i) for i in tops[:2])}</div>
-<div class="latest"><div class="hd"><span>Latest</span></div>{"".join(f'<div class="lt"><span>{_e(_fmt(i.get("date", ""))[:6])}</span>{_label(i)}<h4>{_a(i, _e(i["title"]))}</h4></div>' for i in sorted(tops[2:] + riv[:7], key=lambda x: x.get("date", ""), reverse=True))}</div></div>
+<div class="latest"><div class="hd"><span>Latest</span></div>{"".join(f'<div class="lt"><span>{_e(_fmt(i.get("date", ""))[:6])}</span>{_label(i)}<h4>{_a(i, _e(i["title"]))}</h4></div>' for i in sorted(tops[2:] + riv[:7], key=lambda x: x.get("date", ""), reverse=True)[:8])}</div></div>
 </div>{_numbers(c)}{earn_html}{op_html}<div class="wrap">
 <div class="cols"><div><div class="hd"><span>More top stories</span></div>{"".join(river(i) for i in riv[7:19])}</div><aside><div class="stick">{_deal_tracker(c)}{_ad_box("home")}{_nl_box("home")}{_most(c, used)}{_coming_up(c)}{_vigieye_box()}</div></aside></div></div>
 {an_html}{bands}{ed_html}{_ad_banner("home-banner")}{bands2}
-<div class="wrap"><div class="cols"><div><div class="hd"><span>More news</span></div>{"".join(river(i) for i in riv[19:])}</div><div></div></div></div></main>"""
+<div class="wrap"><div class="cols"><div><div class="hd"><span>More news</span></div>{"".join(river(i) for i in riv[23:])}</div><div></div></div></div></main>"""
     ld = [{"@context": "https://schema.org", "@type": "NewsMediaOrganization", "name": "CompePharma", "url": BASE + "/"}]
     return _page("CompePharma: pharma business news, deals, launches, pricing & manufacturing",
                  "Daily pharma business news: deals and M&A, approvals and launches, marketing, manufacturing and supply, "
