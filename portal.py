@@ -580,7 +580,7 @@ def _deal_tracker(c: dict) -> str:
 
 
 def _module(k: str, items: list, used: set) -> str:
-    rs = [i for i in items if i.get("beat") == k and i["id"] not in used][:5]
+    rs = [i for i in items if i.get("beat") == k and i["id"] not in used][:4]
     if len(rs) < 2:
         return ""
     used.update(i["id"] for i in rs)
@@ -601,6 +601,8 @@ def home():
     ld_ = ranked[0]
     tops = [i for i in ranked[1:] if i.get("beat") != ld_.get("beat")][:5] or ranked[1:6]
     used = {ld_["id"]} | {i["id"] for i in tops}
+    # STAT-style section modules get first call on the remaining stories
+    mods = "".join(_module(k, items, used) for k in ("deals", "launches", "pricing", "manufacturing", "marketing", "legal", "pipeline", "earnings"))
     riv = [i for i in items if i["id"] not in used][:34]
     used |= {i["id"] for i in riv}
 
@@ -640,7 +642,6 @@ def home():
                f'<a href="/insights?type=analysis">All analysis →</a></div><div class="ig">{"".join(icard(a) for a in anal[:4])}</div>'
                + (f'<div class="ig" style="margin-top:26px">{"".join(icard(a) for a in anal[4:8])}</div>' if len(anal) > 4 else "")
                + '</div></section>') if anal else ""
-    mods = "".join(_module(k, items, used) for k in ("deals", "launches", "pricing", "manufacturing", "marketing", "legal", "pipeline", "earnings"))
     mods_html = (f'<section class="band"><div class="wrap"><div class="hd"><span>Sections</span></div><div class="mods">{mods}</div></div></section>') if mods else ""
     bands, bands2 = mods_html, ""
     body = f"""{_beatbar("home")}{_trending(c)}{_ticker(c)}<main>
