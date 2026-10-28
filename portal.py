@@ -21,7 +21,7 @@ import threading
 import time
 from datetime import date, datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 
 router = APIRouter()
@@ -51,7 +51,7 @@ BEAT_BLURB = {
 
 PQRA = {"cta_url": "https://www.pqra.gr/", "site": "https://www.pqra.gr/"}
 
-_cache: dict = {"t": 0.0, "items": [], "editorial": [], "ticker": [], "error": None}
+_cache: dict = {"t": 0.0, "items": [], "editorial": [], "ticker": [], "insights": [], "error": None}
 _lock = threading.Lock()
 
 
@@ -77,6 +77,7 @@ def _load(force: bool = False) -> dict:
             try:
                 _cache["editorial"] = _get("/api/editorial?limit=6").get("items", [])
                 _cache["ticker"] = _get("/api/ticker?limit=14&region=US").get("items", [])
+                _cache["insights"] = _get("/api/cp-articles?limit=60").get("items", []) or _cache["insights"]
             except Exception:
                 pass
             _cache["t"], _cache["error"] = time.time(), None
@@ -148,6 +149,38 @@ def river(it):
 def gcard(it, big: bool = False):
     return (f'<article class="gc{" big" if big else ""}">{_a(it, _thumb(it, "wide"))}<div class="gb">{_label(it)}'
             f'<h3>{_a(it, _e(it["title"]))}</h3>{_dek(it) if big else ""}{_meta(it)}</div></article>')
+
+
+KIND_LABEL = {"earnings": "Earnings analysis", "analysis": "Analysis", "opinion": "Opinion · CompePharma View"}
+
+
+def _ins_thumb(a: dict, cls: str = "wide") -> str:
+    b = a.get("beat") if a.get("beat") in BEAT_COLOR else "industry"
+    seed = hashlib.sha1(a.get("slug", "").encode()).hexdigest()[:10]
+    return f'<img class="th {cls}" loading="lazy" alt="" src="/thumb/{b}/{seed}.svg">'
+
+
+def _figs(a: dict, n: int = 3) -> str:
+    f = [x for x in (a.get("figures") or []) if x.get("value")][:n]
+    return ('<div class="figs">' + "".join(f'<span><b>{_e(x["value"])}</b>{_e(x.get("label"))}</span>' for x in f) + "</div>") if f else ""
+
+
+def icard(a: dict, big: bool = False) -> str:
+    k = a.get("type", "analysis")
+    who = (f'<div class="co">{_e(a.get("company"))}{(" · " + _e(a["ticker"])) if a.get("ticker") else ""}'
+           f'{(" · " + _e(a["period"])) if a.get("period") else ""}</div>') if a.get("company") else ""
+    return (f'<article class="ic {k}{" big" if big else ""}"><a href="/insights/{_e(a["slug"])}">{_ins_thumb(a)}</a><div class="gb">'
+            f'<span class="kk {k}">{_e(KIND_LABEL.get(k, "Analysis"))}</span>{who}'
+            f'<h3><a href="/insights/{_e(a["slug"])}">{_e(a["title"])}</a></h3>'
+            f'{_figs(a) if k == "earnings" else ""}<p class="dek">{_e(a.get("dek"))}</p>'
+            f'<div class="by">{_e(_fmt(a.get("date", "")))} · CompePharma editorial</div></div></article>')
+
+
+def _nl_box(place: str) -> str:
+    return (f'<section class="box nlb"><h2>CompePharma Daily</h2><p>Earnings analysis, deals, launches and pricing news, '
+            f'every weekday morning. Free.</p><form method="post" action="/newsletter/subscribe" class="nlf">'
+            f'<input type="hidden" name="src" value="{_e(place)}"><input type="email" name="email" required placeholder="Work email" aria-label="Work email">'
+            f'<button class="btn" type="submit">Subscribe</button></form></section>')
 
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
@@ -238,6 +271,29 @@ h2 a:hover,h3 a:hover{color:var(--brand)}
 .share{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}.share a{border:1px solid var(--rule);padding:7px 12px;border-radius:3px;font-size:12.5px;font-weight:700}
 .note{font-size:12.5px;color:var(--mut);margin-top:16px}
 .pager{display:flex;gap:10px;margin:22px 0}.pager a{border:1px solid var(--rule);padding:9px 16px;border-radius:4px;font-weight:700}
+.kk{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;padding:3px 7px;border-radius:3px;background:#e8f7f4;color:#0e7c6f}
+.kk.earnings{background:#fde8eb;color:var(--red)}.kk.opinion{background:#eef0ff;color:#4338ca}
+@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .kk{background:#0f2a27}:root:not([data-theme=light]) .kk.earnings{background:#3a0f16}:root:not([data-theme=light]) .kk.opinion{background:#1c1f45}}
+.co{font-size:12.5px;font-weight:700;color:var(--mut);margin-top:8px;text-transform:uppercase;letter-spacing:.04em}
+.ic .gb{padding-top:12px}.ic h3{font:700 19px/1.25 var(--serif);margin-top:6px}.ic.big h3{font-size:27px;line-height:1.15}
+.ic .dek{color:var(--mut);font-size:14.5px;margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ic.opinion h3{font-style:italic}
+.figs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.figs span{background:var(--tint);border:1px solid var(--rule);border-radius:3px;padding:4px 8px;font-size:12px;color:var(--mut)}
+.figs b{display:block;color:var(--ink);font-size:15px;font-weight:900}
+.ig{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:14px}
+.ig.e3{grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(0,1fr))}
+@media(max-width:1100px){.ig,.ig.e3{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.ig,.ig.e3{grid-template-columns:1fr}}
+.earn{background:linear-gradient(180deg,#fff5f6,var(--paper));border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .earn{background:linear-gradient(180deg,#1a0b10,var(--paper))}}
+.nlb{background:var(--tint)}.nlf{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.nlf input{flex:1;min-width:160px;padding:10px;border:1px solid var(--rule);border-radius:4px;font:inherit;background:var(--paper);color:var(--ink)}
+.opn{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin-top:14px}@media(max-width:900px){.opn{grid-template-columns:1fr}}
+.op{border-top:3px solid #4338ca;padding-top:14px}.op .kk{background:transparent;padding:0;color:#4338ca}
+.op h3{font:italic 700 23px/1.22 var(--serif);margin-top:8px}.op p{color:var(--mut);margin-top:8px;font-size:15px}
+.statp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:22px 0}
+.statp div{border:1px solid var(--rule);border-top:4px solid var(--red);padding:12px 14px;border-radius:3px}
+.statp b{display:block;font:900 24px/1.1 var(--sans)}.statp span{font-size:12.5px;color:var(--mut)}
+.art h2.sh{font:800 24px/1.25 var(--serif);margin:30px 0 12px}
+.srcs li{list-style:none;padding:6px 0;border-bottom:1px solid var(--rule);font-size:14px}
 footer{background:#060d1c;color:#9eabc2;margin-top:56px;padding:44px 0 28px;font-size:14px}
 footer .fg{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:30px}@media(max-width:800px){footer .fg{grid-template-columns:1fr 1fr}}
 footer h4{color:#fff;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}footer li{list-style:none;margin:6px 0}
@@ -288,11 +344,12 @@ def _most(c: dict, exclude: set | None = None) -> str:
 
 
 def _side(c: dict, place: str, exclude: set | None = None, ad: bool = True) -> str:
-    return f'<aside><div class="stick">{_ad_box(place) if ad else ""}{_most(c, exclude)}{_coming_up(c)}{_vigieye_box()}</div></aside>'
+    return f'<aside><div class="stick">{_ad_box(place) if ad else ""}{_nl_box(place)}{_most(c, exclude)}{_coming_up(c)}{_vigieye_box()}</div></aside>'
 
 
 def _beatbar(active: str = "") -> str:
-    links = [f'<a class="{"on" if active == "home" else ""}" href="/">Home</a>']
+    links = [f'<a class="{"on" if active == "home" else ""}" href="/">Home</a>',
+             f'<a class="{"on" if active == "insights" else ""}" style="--c:#d7263d" href="/insights">Insights &amp; opinion</a>']
     links += [f'<a class="{"on" if active == k else ""}" style="--c:{c}" href="/news/{k}">{_e(v)}</a>' for k, v, c in BEATS]
     return f'<nav class="beats" aria-label="Sections"><div class="wrap">{"".join(links)}</div></nav>'
 
@@ -308,7 +365,7 @@ def _ticker(c: dict) -> str:
 def _mast() -> str:
     return (f'<header class="mast"><div class="wrap"><div><a href="/" class="logo">Compe<b>Pharma</b></a>'
             f'<div class="tag">The business of pharma: deals, launches, pricing, manufacturing and legal, every day.</div></div>'
-            f'<div class="cta"><a class="btn ghost" href="/news/deals">Deals</a><a class="btn" href="{VIGIEYE}/newsletter?utm_source=compepharma">Subscribe free</a></div></div></header>')
+            f'<div class="cta"><a class="btn ghost" href="/insights?type=earnings">Earnings analysis</a><a class="btn" href="/newsletter">Subscribe free</a></div></div></header>')
 
 
 def _page(title: str, desc: str, path: str, body: str, canonical: str | None = None, ld: list | None = None) -> HTMLResponse:
@@ -368,20 +425,39 @@ def home():
     ed = c.get("editorial") or []
     ed_html = ""
     if ed:
-        ed_html = ('<section class="dark"><div class="wrap"><div class="hd"><span>Analysis &amp; opinion</span>'
+        ed_html = ('<section class="dark"><div class="wrap"><div class="hd"><span>Regulatory analysis from VigiEye</span>'
                    f'<a href="{VIGIEYE}/analysis" style="color:#9fb0c9">All analysis →</a></div><div class="eds">'
                    + "".join(f'<article class="ed"><div class="k">{_e("Opinion" if a.get("type") == "opinion" else "Analysis")}</div>'
                              f'<h3><a href="{_e(a["url"])}">{_e(a["title"])}</a></h3><p>{_e(a.get("dek") or "")}</p>'
                              f'<div class="by" style="color:#7f8ea8">{_e(_fmt(a.get("date", "")))}</div></article>' for a in ed[:4])
                    + "</div></div></section>")
+    ins = c.get("insights") or []
+    earn = [a for a in ins if a.get("type") == "earnings"][:6]
+    anal = [a for a in ins if a.get("type") == "analysis"][:8]
+    opin = [a for a in ins if a.get("type") == "opinion"][:3]
+    earn_html = (f'<section class="band earn"><div class="wrap"><div class="hd" style="--c:var(--red)"><span style="color:var(--red)">Earnings analysis</span>'
+                 f'<a href="/insights?type=earnings">All earnings analysis →</a></div><div class="ig e3">'
+                 f'{icard(earn[0], True)}{"".join(icard(a) for a in earn[1:3])}</div>'
+                 + (f'<div class="ig" style="margin-top:26px">{"".join(icard(a) for a in earn[3:6])}</div>' if len(earn) > 3 else "")
+                 + '</div></section>') if earn else ""
+    op_html = (f'<section class="band"><div class="wrap"><div class="hd" style="--c:#4338ca"><span style="color:#4338ca">Opinion · CompePharma View</span>'
+               f'<a href="/insights?type=opinion">All opinion →</a></div><div class="opn">'
+               + "".join(f'<article class="op"><span class="kk">CompePharma View</span><h3><a href="/insights/{_e(a["slug"])}">{_e(a["title"])}</a></h3>'
+                         f'<p>{_e(a.get("dek"))}</p><div class="by">{_e(_fmt(a.get("date", "")))}</div></article>' for a in opin)
+               + '</div></div></section>') if opin else ""
+    an_html = (f'<section class="band alt"><div class="wrap"><div class="hd" style="--c:var(--brand)"><span style="color:var(--brand)">Insights &amp; analysis</span>'
+               f'<a href="/insights?type=analysis">All analysis →</a></div><div class="ig">{"".join(icard(a) for a in anal[:4])}</div>'
+               + (f'<div class="ig" style="margin-top:26px">{"".join(icard(a) for a in anal[4:8])}</div>' if len(anal) > 4 else "")
+               + '</div></section>') if anal else ""
     bands = "".join(band(k, n % 2 == 0) for n, k in enumerate(("deals", "launches", "marketing")))
     bands2 = "".join(band(k, n % 2 == 0) for n, k in enumerate(("manufacturing", "pricing", "legal", "earnings", "pipeline")))
     body = f"""{_beatbar("home")}{_ticker(c)}<main>
 <div class="wrap"><div class="front"><div>{hero(ld_)}</div>
 <div><div class="hd"><span>Top stories</span></div>{"".join(mini(i) for i in tops)}</div>
 <div class="adcol">{_ad_box("home-top")}</div></div>
+</div>{earn_html}{op_html}<div class="wrap">
 <div class="cols"><div><div class="hd"><span>Latest news</span></div>{"".join(river(i) for i in riv[:12])}</div>{_side(c, "home", used, ad=False)}</div></div>
-{bands}{ed_html}{_ad_banner("home-banner")}{bands2}
+{an_html}{bands}{ed_html}{_ad_banner("home-banner")}{bands2}
 <div class="wrap"><div class="cols"><div><div class="hd"><span>More news</span></div>{"".join(river(i) for i in riv[12:])}</div><div></div></div></div></main>"""
     ld = [{"@context": "https://schema.org", "@type": "NewsMediaOrganization", "name": "CompePharma", "url": BASE + "/"}]
     return _page("CompePharma: pharma business news, deals, launches, pricing & manufacturing",
@@ -487,6 +563,106 @@ _GLYPH = {
 }
 
 
+_ART: dict = {}
+
+
+def _cp_article(slug: str) -> dict | None:
+    hit = _ART.get(slug)
+    if hit and time.time() - hit[0] < 1800:
+        return hit[1]
+    try:
+        a = _get(f"/api/cp-article/{slug}", timeout=15)
+    except Exception:
+        a = hit[1] if hit else None
+    if a:
+        _ART[slug] = (time.time(), a)
+    return a
+
+
+@router.get("/insights", response_class=HTMLResponse, include_in_schema=False)
+def insights(type: str = ""):
+    c = _load()
+    ins = [a for a in c.get("insights") or [] if not type or a.get("type") == type]
+    tabs = "".join(f'<a class="btn {"" if (type == k) else "ghost"}" style="padding:8px 14px" href="/insights{("?type=" + k) if k else ""}">{_e(v)}</a>'
+                   for k, v in (("", "All"), ("earnings", "Earnings analysis"), ("analysis", "Analysis"), ("opinion", "Opinion")))
+    grid = "".join(icard(a, i == 0) for i, a in enumerate(ins[:60])) or '<p class="note">The first pieces are being written.</p>'
+    body = f"""{_beatbar("insights")}<div class="shead" style="--c:#d7263d"><div class="wrap"><h1>Insights &amp; opinion</h1>
+<p>Earnings analysis of drugmakers' quarterly results, in-depth business analysis and the CompePharma View, ten new pieces every day.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">{tabs}</div></div></div>
+<main class="wrap"><div class="cols" style="margin-top:28px"><div class="ig" style="grid-template-columns:repeat(2,minmax(0,1fr))">{grid}</div>{_side(c, "insights")}</div></main>"""
+    return _page("Pharma earnings analysis, insights & opinion | CompePharma",
+                 "Earnings analysis of pharma quarterly results, business analysis and opinion from CompePharma.", "/insights", body)
+
+
+@router.get("/insights/{slug}", response_class=HTMLResponse, include_in_schema=False)
+def insight(slug: str):
+    if not re.match(r"^[a-z0-9\-]{5,120}$", slug):
+        raise HTTPException(404)
+    c = _load()
+    a = _cp_article(slug)
+    if not a:
+        raise HTTPException(404)
+    k = a.get("type", "analysis")
+    color = "#d7263d" if k == "earnings" else ("#4338ca" if k == "opinion" else BEAT_COLOR.get(a.get("beat"), "#0e9c8a"))
+    figs = "".join(f'<div><b>{_e(f.get("value"))}</b><span>{_e(f.get("label"))}</span></div>' for f in a.get("figures") or [])
+    secs = "".join(f'<h2 class="sh">{_e(x.get("heading"))}</h2>' + "".join(f"<p>{_e(p)}</p>" for p in x.get("paragraphs") or [])
+                   for x in a.get("sections") or [])
+    take = a.get("takeaways") or []
+    srcs = "".join((f'<li><a href="{_e(x["url"])}" target="_blank" rel="noopener" style="color:var(--brand);font-weight:700">{_e(x.get("title"))}</a>'
+                    if x.get("url") else f'<li>{_e(x.get("title"))}') + f' <span class="by">{_e(x.get("publisher"))} · {_e(_fmt(x.get("date", "")))}</span></li>'
+                   for x in a.get("sources") or [])
+    who = (f'<div class="co" style="font-size:14px">{_e(a.get("company"))}{(" · " + _e(a["ticker"])) if a.get("ticker") else ""}'
+           f'{(" · " + _e(a["period"])) if a.get("period") else ""}</div>') if a.get("company") else ""
+    more = [x for x in c.get("insights") or [] if x.get("slug") != slug and x.get("type") == k][:3]
+    from urllib.parse import quote
+    share = BASE + f"/insights/{slug}"
+    body = f"""{_beatbar("insights")}<main class="wrap"><div class="cols" style="margin-top:26px"><article class="art" style="--c:{color}">
+<span class="kk {k}">{_e(KIND_LABEL.get(k, "Analysis"))}</span>{who}<h1>{_e(a["title"])}</h1><p class="dek">{_e(a.get("dek"))}</p>
+<div class="by">{_e(_fmt(a.get("date", "")))} · CompePharma editorial</div>
+<div class="share"><a href="https://www.linkedin.com/sharing/share-offsite/?url={quote(share)}" target="_blank" rel="noopener">Share on LinkedIn</a>
+<a href="mailto:?subject={quote(a["title"])}&body={quote(share)}">Email</a></div>
+{f'<div class="statp">{figs}</div>' if figs else f'<div style="margin:20px 0 6px">{_ins_thumb(a)}</div>'}
+<div class="body">{secs}</div>
+{f'<div class="take"><h2>{"What to watch" if k == "earnings" else "What leaders should do"}</h2><ul>{"".join(f"<li>{_e(t)}</li>" for t in take)}</ul></div>' if take else ""}
+{f'<h2 class="sh" style="font-size:18px">Sources</h2><ul class="srcs">{srcs}</ul>' if srcs else ""}
+<p class="note">Written by CompePharma's editorial system (AI-assisted, model {_e(a.get("model"))}) strictly from the official material listed.
+{"Earnings analysis is based on the company's results release filed with the SEC, not on the earnings call. " if k == "earnings" else ""}It can contain errors; check the sources. Not investment advice.</p>
+{f'<section style="margin-top:36px"><div class="hd" style="--c:{color}"><span>More {_e(KIND_LABEL.get(k, ""))}</span><a href="/insights?type={k}">All →</a></div><div class="ig" style="grid-template-columns:repeat(3,minmax(0,1fr))">{"".join(icard(x) for x in more)}</div></section>' if more else ""}
+</article>{_side(c, "insight")}</div></main>"""
+    ld = [{"@context": "https://schema.org", "@type": "OpinionNewsArticle" if k == "opinion" else "AnalysisNewsArticle",
+           "headline": a["title"][:110], "description": a.get("dek", ""), "datePublished": a.get("date"),
+           "author": {"@type": "Organization", "name": "CompePharma editorial"},
+           "publisher": {"@type": "Organization", "name": "CompePharma", "url": BASE + "/"}}]
+    return _page(f"{a['title'][:90]} | CompePharma {KIND_LABEL.get(k, '')}", (a.get("dek") or a["title"])[:155], f"/insights/{slug}", body, ld=ld)
+
+
+@router.get("/newsletter", response_class=HTMLResponse, include_in_schema=False)
+def newsletter(ok: str = ""):
+    c = _load()
+    msg = {"1": "You're in. CompePharma Daily arrives every weekday morning.", "0": "That didn't work. Check the address and try again."}.get(ok, "")
+    body = f"""{_beatbar("")}<div class="shead" style="--c:#0e9c8a"><div class="wrap"><h1>CompePharma Daily</h1>
+<p>The business of pharma in your inbox every weekday morning: earnings analysis, deals, launches, pricing, manufacturing and the CompePharma View. Free.</p></div></div>
+<main class="wrap"><div class="cols" style="margin-top:28px"><div style="max-width:620px">{f'<p class="box" style="font-weight:700">{_e(msg)}</p>' if msg else ""}
+{_nl_box("newsletter-page")}<ul style="margin:10px 0 0 18px;line-height:1.9"><li>Earnings analysis of drugmakers' quarterly results</li>
+<li>Top deals, launches and pricing stories</li><li>The CompePharma View opinion column</li><li>Upcoming FDA dates</li></ul></div>{_side(c, "newsletter")}</div></main>"""
+    return _page("CompePharma Daily: the pharma business newsletter", "Free daily pharma business newsletter.", "/newsletter", body)
+
+
+@router.post("/newsletter/subscribe", include_in_schema=False)
+async def newsletter_subscribe(request: Request):
+    from fastapi.responses import RedirectResponse
+    form = await request.form()
+    email = (form.get("email") or "").strip()
+    ok = "0"
+    try:
+        import httpx
+        r = httpx.post(VIGIEYE + "/cp/subscribe", json={"email": email, "source": f"cp:{form.get('src') or 'site'}"[:60]}, timeout=20)
+        ok = "1" if r.status_code == 200 else "0"
+    except Exception:
+        pass
+    return RedirectResponse(f"/newsletter?ok={ok}", status_code=303)
+
+
 @router.get("/thumb/{beat}/{seed}.svg", include_in_schema=False)
 def thumb(beat: str, seed: str):
     b = beat if beat in BEAT_COLOR else "industry"
@@ -518,7 +694,8 @@ def robots():
 @router.get("/sitemap.xml", include_in_schema=False)
 def sitemap():
     today = date.today().isoformat()
-    urls = ["/"] + [f"/news/{k}" for k, _, _ in BEATS]
+    urls = ["/", "/insights", "/newsletter"] + [f"/news/{k}" for k, _, _ in BEATS] + \
+           [f"/insights/{a['slug']}" for a in (_load().get("insights") or [])[:200]]
     body = "".join(f"<url><loc>{_e(BASE + u)}</loc><lastmod>{today}</lastmod><changefreq>hourly</changefreq></url>" for u in urls)
     return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>',
                     media_type="application/xml")
