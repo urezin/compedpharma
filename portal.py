@@ -105,7 +105,7 @@ def _href(it: dict) -> str:
 def _thumb(it: dict, cls: str) -> str:
     b = it.get("beat") if it.get("beat") in BEAT_COLOR else "industry"
     seed = hashlib.sha1((it.get("id") or it.get("title", "")).encode()).hexdigest()[:10]
-    return f'<img class="th {cls}" loading="lazy" alt="" src="/thumb/{b}/{seed}.svg">'
+    return f'<img class="th {cls}" loading="lazy" alt="" src="/thumb/{b}/{seed}.svg?v=2">'
 
 
 def _a(it: dict, inner: str, cls: str = "") -> str:
@@ -151,13 +151,13 @@ def gcard(it, big: bool = False):
             f'<h3>{_a(it, _e(it["title"]))}</h3>{_dek(it) if big else ""}{_meta(it)}</div></article>')
 
 
-KIND_LABEL = {"earnings": "Earnings analysis", "analysis": "Analysis", "opinion": "Opinion · CompePharma View"}
+KIND_LABEL = {"earnings": "CP+ Earnings analysis", "analysis": "CP+ Analysis", "opinion": "Opinion · CompePharma View"}
 
 
 def _ins_thumb(a: dict, cls: str = "wide") -> str:
     b = a.get("beat") if a.get("beat") in BEAT_COLOR else "industry"
     seed = hashlib.sha1(a.get("slug", "").encode()).hexdigest()[:10]
-    return f'<img class="th {cls}" loading="lazy" alt="" src="/thumb/{b}/{seed}.svg">'
+    return f'<img class="th {cls}" loading="lazy" alt="" src="/thumb/{b}/{seed}.svg?v=2">'
 
 
 def _figs(a: dict, n: int = 3) -> str:
@@ -334,6 +334,46 @@ footer{background:#000;color:#9eabc2;margin-top:56px;padding:44px 0 28px;font-si
 footer .fg{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:30px}@media(max-width:800px){footer .fg{grid-template-columns:1fr 1fr}}
 footer h4{color:#fff;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}footer li{list-style:none;margin:6px 0}
 footer a:hover{color:#fff}footer .logo{font-size:32px;color:#fff}footer .fine{border-top:1px solid #1b2840;margin-top:30px;padding-top:18px;font-size:12.5px}
+
+/* --- richer STAT-style layer --- */
+.trend{background:#111;color:#ddd;font-size:12.5px;border-bottom:1px solid #222}.trend .wrap{display:flex;gap:10px;align-items:center;height:38px;overflow-x:auto;scrollbar-width:none}
+.trend b{color:var(--red);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:900;margin-right:6px;flex:none}
+.chip{flex:none;border:1px solid #333;border-radius:999px;padding:3px 11px;font-weight:600;color:#eee;white-space:nowrap}
+.th{transition:transform .5s ease,filter .3s}a:hover>.th{transform:scale(1.03);filter:saturate(1.15)}
+a.hi,a.mi,.gc>a,.river>a,.mini>a,.ic>a{display:block;overflow:hidden}
+.kk{background:var(--red)!important;color:#fff!important;border-radius:2px}.kk.opinion{background:#1f2937!important}
+.lab{position:relative;padding-left:14px}.lab:before{content:"";position:absolute;left:0;top:50%;width:8px;height:8px;margin-top:-4px;background:var(--red)}
+.hero h2{font-size:46px}@media(max-width:700px){.hero h2{font-size:28px}}
+.nums{background:#0b0d12;color:#e8ebf1;margin-top:44px;padding:34px 0 40px}
+.nums .hd{border-color:var(--red)}.nums .hd span{color:#fff}.live{font-style:normal;font-size:12px;color:#fca5a5;font-weight:700;letter-spacing:.04em}
+.ntg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:#1d222d;border:1px solid #1d222d;margin-top:16px}
+@media(max-width:1100px){.ntg{grid-template-columns:repeat(3,1fr)}}@media(max-width:560px){.ntg{grid-template-columns:repeat(2,1fr)}}
+.nt{background:#0f131a;padding:16px 16px 10px;display:flex;flex-direction:column;gap:2px}
+.nt span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b2;font-weight:800}
+.nt b{font:900 44px/1 var(--sans);letter-spacing:-.04em;color:#fff;margin-top:6px}
+.nt small{font-size:12px;color:#8b94a5}.nt em{font-style:normal;font-weight:800;color:#9aa3b2}.nt em.up{color:#4ade80}.nt em.dn{color:#f87171}
+.spk{width:100%;height:38px;margin-top:8px}
+.nrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin-top:24px}@media(max-width:860px){.nrow{grid-template-columns:1fr}}
+.nbox{border-top:1px solid #262c38;padding-top:12px}.nbox h4{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b2;margin-bottom:8px}
+.cb{display:grid;grid-template-columns:170px 1fr 44px;align-items:center;gap:12px;padding:6px 0;font-size:13.5px;color:#d7dce5}
+.cb i{display:block;height:12px;background:var(--c);border-radius:1px;min-width:4px}.cb b{text-align:right;font-weight:800;color:#fff}
+.cb:hover span{color:#fff;text-decoration:underline}
+.cos{list-style:none;counter-reset:c}.cos li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1d222d;font-size:14px}
+.cos li:before{counter-increment:c;content:counter(c);font:900 20px/1 var(--sans);color:var(--red);width:22px}
+.cos li span{flex:1;font-weight:700}.cos code,.dtr code{font:700 11.5px/1 ui-monospace,monospace;background:#1f2937;color:#e5e7eb;padding:3px 6px;border-radius:3px}
+.cos b{color:#fff}
+.mods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:30px 26px;margin-top:16px}
+@media(max-width:1200px){.mods{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.mods{grid-template-columns:1fr}}
+.mod{border-top:4px solid var(--c);padding-top:10px}.mh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.mh>a:first-child{font-weight:900;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+.more{font-size:12px;font-weight:800;color:var(--mut)}.more:hover{color:var(--red)}
+.mod h3{font:800 19px/1.25 var(--sans);letter-spacing:-.01em;margin-top:10px}.mod h3 a:hover{color:var(--red)}
+.mod .dek{color:var(--mut);font-size:14px;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mod ul{list-style:none;margin-top:10px}.mod li{border-top:1px solid var(--rule);padding:9px 0;font:700 14.5px/1.3 var(--sans)}
+.mod li a:hover{color:var(--red)}.mod li span{display:block;font-size:11.5px;color:var(--mut);font-weight:600;margin-top:3px}
+.dtr table{width:100%;border-collapse:collapse;font-size:13px}.dtr td{border-bottom:1px solid var(--rule);padding:8px 6px 8px 0;vertical-align:top}
+.dtr td a{font-weight:600}.dtr td a:hover{color:var(--red)}.dtr .dt{color:var(--red);font-weight:900;white-space:nowrap;font-size:11.5px}
+.dtr code{background:var(--tint);color:var(--ink)}
 """
 
 
@@ -436,6 +476,110 @@ def _score(it: dict) -> float:
     return s
 
 
+
+def _spark(vals: list, w: int = 120, h: int = 34, col: str = "#e4322b") -> str:
+    m = max(vals) or 1
+    step = w / max(1, len(vals) - 1)
+    pts = " ".join(f"{k * step:.1f},{h - 3 - (v / m) * (h - 8):.1f}" for k, v in enumerate(vals))
+    return (f'<svg class="spk" viewBox="0 0 {w} {h}" preserveAspectRatio="none" aria-hidden="true">'
+            f'<polygon points="0,{h} {pts} {w},{h}" fill="{col}" fill-opacity=".16"/>'
+            f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="2.2" stroke-linejoin="round"/></svg>')
+
+
+def _daily(items: list, pred, days: int = 14) -> list:
+    from datetime import timedelta
+    today = date.today()
+    keys = [(today - timedelta(days=d)).isoformat() for d in range(days - 1, -1, -1)]
+    cnt = {k: 0 for k in keys}
+    for i in items:
+        d = (i.get("date") or "")[:10]
+        if d in cnt and pred(i):
+            cnt[d] += 1
+    return [cnt[k] for k in keys]
+
+
+def _numbers(c: dict) -> str:
+    """'By the numbers': live counts computed from the stories on the site, with 14-day sparklines."""
+    items = c["items"]
+    from datetime import timedelta
+    wk = (date.today() - timedelta(days=7)).isoformat()
+    tiles = [("All stories", lambda i: True, "#ffffff"), ("Deals & M&A", lambda i: i.get("beat") == "deals", BEAT_COLOR["deals"]),
+             ("Approvals & launches", lambda i: i.get("beat") == "launches", "#38bdf8"),
+             ("Manufacturing & supply", lambda i: i.get("beat") == "manufacturing", "#f59e0b"),
+             ("Pricing & policy", lambda i: i.get("beat") == "pricing", "#34d399"),
+             ("Legal", lambda i: i.get("beat") == "legal", "#cbd5e1")]
+    cells = []
+    for lab, pred, colr in tiles:
+        series = _daily(items, pred)
+        n7 = sum(1 for i in items if (i.get("date") or "") >= wk and pred(i))
+        prev = sum(series[:7])
+        cur = sum(series[7:])
+        delta = cur - prev
+        arrow = (f'<em class="up">▲ {delta}</em>' if delta > 0 else f'<em class="dn">▼ {abs(delta)}</em>' if delta < 0 else '<em>— 0</em>')
+        cells.append(f'<div class="nt"><span>{_e(lab)}</span><b>{n7}</b><small>last 7 days {arrow} vs prior week</small>{_spark(series, col=colr)}</div>')
+    # coverage by section, 30 days
+    wk30 = (date.today() - timedelta(days=30)).isoformat()
+    by = {}
+    for i in items:
+        if (i.get("date") or "") >= wk30:
+            by[i.get("beat", "industry")] = by.get(i.get("beat", "industry"), 0) + 1
+    top = sorted(by.items(), key=lambda x: -x[1])[:8]
+    mx = max([v for _, v in top] or [1])
+    bars = "".join(f'<a class="cb" href="/news/{_e(k)}"><span>{_e(BEAT_LABEL.get(k, k))}</span><i style="width:{max(4, v / mx * 100):.0f}%;--c:{BEAT_COLOR.get(k, "#64748b")}"></i><b>{v}</b></a>'
+                   for k, v in top)
+    # most-covered companies
+    co = {}
+    for i in items:
+        if (i.get("date") or "") >= wk30 and i.get("kind") == "company" and i.get("publisher"):
+            key = (i.get("publisher"), i.get("ticker") or "")
+            co[key] = co.get(key, 0) + 1
+    tc = sorted(co.items(), key=lambda x: -x[1])[:6]
+    cos = "".join(f'<li><span>{_e(p)}</span>{f"<code>{_e(t)}</code>" if t else ""}<b>{n}</b></li>' for (p, t), n in tc)
+    return (f'<section class="nums"><div class="wrap"><div class="hd"><span>By the numbers</span><em class="live">● Live from today\'s coverage</em></div>'
+            f'<div class="ntg">{"".join(cells)}</div><div class="nrow"><div class="nbox"><h4>Coverage by section · 30 days</h4>{bars}</div>'
+            f'<div class="nbox"><h4>Most-covered companies · 30 days</h4><ol class="cos">{cos}</ol></div></div></div></section>')
+
+
+def _trending(c: dict) -> str:
+    from datetime import timedelta
+    since = (date.today() - timedelta(days=10)).isoformat()
+    co = {}
+    for i in c["items"]:
+        if (i.get("date") or "") >= since and i.get("publisher") and i.get("kind") == "company":
+            co[i["publisher"]] = co.get(i["publisher"], 0) + 1
+    top = [k for k, _ in sorted(co.items(), key=lambda x: -x[1])[:9]]
+    if not top:
+        return ""
+    chips = "".join(f'<span class="chip">{_e(t)}</span>' for t in top)
+    return f'<div class="trend"><div class="wrap"><b>Trending</b>{chips}</div></div>'
+
+
+def _tick(i: dict) -> str:
+    return f' <code>{_e(i["ticker"])}</code>' if i.get("ticker") else ""
+
+
+def _deal_tracker(c: dict) -> str:
+    rows = [i for i in c["items"] if i.get("beat") == "deals"][:8]
+    if len(rows) < 3:
+        return ""
+    tr = "".join(f'<tr><td class="dt">{_e(_fmt(i.get("date", ""))[:6])}</td><td><b>{_e(i.get("publisher"))}</b>'
+                 f'{_tick(i)}</td>'
+                 f'<td>{_a(i, _e(i["title"]))}</td></tr>' for i in rows)
+    return (f'<section class="box dtr"><h2>Deal tracker</h2><table>{tr}</table>'
+            f'<p style="margin-top:10px"><a class="more" href="/news/deals">All deals →</a></p></section>')
+
+
+def _module(k: str, items: list, used: set) -> str:
+    rs = [i for i in items if i.get("beat") == k and i["id"] not in used][:5]
+    if len(rs) < 2:
+        return ""
+    used.update(i["id"] for i in rs)
+    lead, rest = rs[0], rs[1:]
+    lis = "".join(f'<li>{_a(i, _e(i["title"]))}<span>{_e(_fmt(i.get("date", ""))[:6])}</span></li>' for i in rest)
+    return (f'<section class="mod" style="--c:{BEAT_COLOR[k]}"><div class="mh"><a href="/news/{k}">{_e(BEAT_LABEL[k])}</a><a class="more" href="/news/{k}">More →</a></div>'
+            f'{_a(lead, _thumb(lead, "wide"), "mi")}<h3>{_a(lead, _e(lead["title"]))}</h3>{_dek(lead)}<ul>{lis}</ul></section>')
+
+
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
 def home():
     c = _load()
@@ -486,14 +630,15 @@ def home():
                f'<a href="/insights?type=analysis">All analysis →</a></div><div class="ig">{"".join(icard(a) for a in anal[:4])}</div>'
                + (f'<div class="ig" style="margin-top:26px">{"".join(icard(a) for a in anal[4:8])}</div>' if len(anal) > 4 else "")
                + '</div></section>') if anal else ""
-    bands = "".join(band(k, n % 2 == 0) for n, k in enumerate(("deals", "launches", "marketing")))
-    bands2 = "".join(band(k, n % 2 == 0) for n, k in enumerate(("manufacturing", "pricing", "legal", "earnings", "pipeline")))
-    body = f"""{_beatbar("home")}{_ticker(c)}<main>
+    mods = "".join(_module(k, items, used) for k in ("deals", "launches", "pricing", "manufacturing", "marketing", "legal", "pipeline", "earnings"))
+    mods_html = (f'<section class="band"><div class="wrap"><div class="hd"><span>Sections</span></div><div class="mods">{mods}</div></div></section>') if mods else ""
+    bands, bands2 = mods_html, ""
+    body = f"""{_beatbar("home")}{_trending(c)}{_ticker(c)}<main>
 <div class="wrap"><div class="front"><div>{hero(ld_)}</div>
 <div class="sec2">{"".join(gcard(i) for i in tops[:2])}</div>
 <div class="latest"><div class="hd"><span>Latest</span></div>{"".join(f'<div class="lt"><span>{_e(_fmt(i.get("date", ""))[:6])}</span>{_label(i)}<h4>{_a(i, _e(i["title"]))}</h4></div>' for i in sorted(tops[2:] + riv[:7], key=lambda x: x.get("date", ""), reverse=True))}</div></div>
-</div>{earn_html}{op_html}<div class="wrap">
-<div class="cols"><div><div class="hd"><span>More top stories</span></div>{"".join(river(i) for i in riv[7:19])}</div>{_side(c, "home", used)}</div></div>
+</div>{_numbers(c)}{earn_html}{op_html}<div class="wrap">
+<div class="cols"><div><div class="hd"><span>More top stories</span></div>{"".join(river(i) for i in riv[7:19])}</div><aside><div class="stick">{_deal_tracker(c)}{_ad_box("home")}{_nl_box("home")}{_most(c, used)}{_coming_up(c)}{_vigieye_box()}</div></aside></div></div>
 {an_html}{bands}{ed_html}{_ad_banner("home-banner")}{bands2}
 <div class="wrap"><div class="cols"><div><div class="hd"><span>More news</span></div>{"".join(river(i) for i in riv[19:])}</div><div></div></div></div></main>"""
     ld = [{"@context": "https://schema.org", "@type": "NewsMediaOrganization", "name": "CompePharma", "url": BASE + "/"}]
@@ -702,25 +847,85 @@ async def newsletter_subscribe(request: Request):
 
 @router.get("/thumb/{beat}/{seed}.svg", include_in_schema=False)
 def thumb(beat: str, seed: str):
+    """Editorial illustration for a story: a duotone scene in one of five styles, varied by seed."""
     b = beat if beat in BEAT_COLOR else "industry"
     h = hashlib.sha1(seed.encode()).digest()
     col = BEAT_COLOR[b]
-    rings = "".join(f'<circle cx="{(h[i] * 3) % 640}" cy="{(h[i + 1] * 2) % 360}" r="{40 + h[i + 2] % 140}" fill="none" '
-                    f'stroke="#fff" stroke-opacity=".07" stroke-width="{2 + h[i] % 8}"/>' for i in range(0, 12, 3))
-    dots = "".join(f'<circle cx="{x}" cy="{y}" r="1.6" fill="#fff" fill-opacity=".14"/>'
-                   for x in range(20 + h[13] % 20, 640, 28) for y in range(18, 360, 28) if (x * 7 + y * 3 + h[14]) % 5 == 0)
-    bars = "".join(f'<rect x="{430 + k * 26}" y="{300 - (20 + h[k] % 120)}" width="16" height="{20 + h[k] % 120}" rx="2" fill="#fff" fill-opacity=".10"/>'
-                   for k in range(7))
+    style = h[0] % 5
+    W, H = 640, 360
+    acc = "#e4322b"
+    def r(k, lo, hi):
+        return lo + (h[k % 20] * 7 + k * 13) % max(1, hi - lo)
+    layers = []
+    # halftone dot field, fading across the frame
+    for y in range(12, H, 16):
+        for x in range(8 + (y // 16 % 2) * 8, W, 16):
+            d = ((x - r(1, 80, 560)) ** 2 + (y - r(2, 60, 300)) ** 2) ** .5
+            rad = max(0.0, 3.4 - d / 120)
+            if rad > .35:
+                layers.append(f'<circle cx="{x}" cy="{y}" r="{rad:.2f}" fill="#fff" fill-opacity=".16"/>')
+    if style == 0:      # molecule network
+        pts = [(r(3 + k * 2, 60, 580), r(4 + k * 2, 50, 310)) for k in range(9)]
+        for a in range(9):
+            for bb in range(a + 1, 9):
+                if (pts[a][0] - pts[bb][0]) ** 2 + (pts[a][1] - pts[bb][1]) ** 2 < 210 ** 2:
+                    layers.append(f'<line x1="{pts[a][0]}" y1="{pts[a][1]}" x2="{pts[bb][0]}" y2="{pts[bb][1]}" stroke="#fff" stroke-opacity=".35" stroke-width="3"/>')
+        for k, (x, y) in enumerate(pts):
+            rr = 10 + h[k] % 22
+            fill = acc if k == h[9] % 9 else "#fff"
+            layers.append(f'<circle cx="{x}" cy="{y}" r="{rr}" fill="{fill}" fill-opacity="{.95 if fill == acc else .85}"/>'
+                          f'<circle cx="{x - rr * .3:.0f}" cy="{y - rr * .3:.0f}" r="{rr * .3:.0f}" fill="#fff" fill-opacity=".5"/>')
+    elif style == 1:    # capsules and tablets
+        for k in range(7):
+            x, y, ang = r(3 + k, 40, 600), r(10 + k, 40, 320), h[k] % 180
+            L = 70 + h[k + 5] % 80
+            c1 = acc if k % 3 == 0 else "#fff"
+            layers.append(f'<g transform="translate({x} {y}) rotate({ang})"><rect x="{-L / 2}" y="-18" width="{L}" height="36" rx="18" fill="{c1}" fill-opacity=".9"/>'
+                          f'<rect x="0" y="-18" width="{L / 2}" height="36" rx="18" fill="{col}" fill-opacity=".85"/>'
+                          f'<rect x="{-L / 2 + 8}" y="-12" width="{L / 2 - 14}" height="7" rx="3.5" fill="#fff" fill-opacity=".45"/></g>')
+        for k in range(5):
+            layers.append(f'<circle cx="{r(30 + k, 30, 610)}" cy="{r(40 + k, 30, 330)}" r="{18 + h[k + 9] % 14}" fill="#fff" fill-opacity=".8"/>')
+    elif style == 2:    # market chart
+        n = 18
+        ys = [r(5 + k, 90, 290) for k in range(n)]
+        ys = [int(sum(ys[max(0, k - 2):k + 1]) / len(ys[max(0, k - 2):k + 1])) for k in range(n)]
+        pts = " ".join(f"{30 + k * 34},{y}" for k, y in enumerate(ys))
+        for k, y in enumerate(ys):
+            hh = 20 + h[k % 20] % 70
+            layers.append(f'<rect x="{24 + k * 34}" y="{340 - hh}" width="14" height="{hh}" fill="#fff" fill-opacity=".14"/>')
+        layers.append(f'<polygon points="30,340 {pts} {30 + (n - 1) * 34},340" fill="#fff" fill-opacity=".10"/>'
+                      f'<polyline points="{pts}" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>'
+                      f'<circle cx="{30 + (n - 1) * 34}" cy="{ys[-1]}" r="11" fill="{acc}"/><circle cx="{30 + (n - 1) * 34}" cy="{ys[-1]}" r="22" fill="none" stroke="{acc}" stroke-width="3" stroke-opacity=".6"/>')
+        for g in range(1, 5):
+            layers.append(f'<line x1="0" x2="{W}" y1="{g * 72}" y2="{g * 72}" stroke="#fff" stroke-opacity=".08"/>')
+    elif style == 3:    # cells under the microscope
+        for k in range(11):
+            x, y, rr = r(3 + k, 20, 620), r(12 + k, 20, 340), 26 + h[k] % 46
+            layers.append(f'<circle cx="{x}" cy="{y}" r="{rr}" fill="#fff" fill-opacity=".10" stroke="#fff" stroke-opacity=".5" stroke-width="2.5"/>'
+                          f'<circle cx="{x + rr * .2:.0f}" cy="{y - rr * .15:.0f}" r="{rr * .32:.0f}" fill="{acc if k % 4 == 0 else "#fff"}" fill-opacity="{.9 if k % 4 == 0 else .55}"/>')
+        layers.append(f'<circle cx="{W / 2}" cy="{H / 2}" r="230" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="80"/>')
+    else:               # plant and supply line
+        base = 300
+        for k in range(6):
+            x = 30 + k * 100
+            hh = 60 + h[k] % 130
+            layers.append(f'<rect x="{x}" y="{base - hh}" width="80" height="{hh}" fill="#fff" fill-opacity="{.12 + (k % 3) * .08:.2f}"/>')
+            for w in range(3):
+                layers.append(f'<rect x="{x + 10 + w * 22}" y="{base - hh + 16}" width="12" height="12" fill="#fff" fill-opacity=".45"/>')
+            if k % 2 == 0:
+                sh = 40 + h[k + 6] % 60
+                layers.append(f'<rect x="{x + 56}" y="{base - hh - sh}" width="14" height="{sh}" fill="#fff" fill-opacity=".3"/>'
+                              f'<circle cx="{x + 63}" cy="{base - hh - sh - 14}" r="{12 + h[k] % 10}" fill="#fff" fill-opacity=".18"/>')
+        layers.append(f'<rect x="0" y="{base}" width="{W}" height="10" fill="#fff" fill-opacity=".5"/>')
+        for k in range(9):
+            layers.append(f'<rect x="{20 + k * 70}" y="{base + 18}" width="46" height="26" rx="3" fill="{acc if k == h[3] % 9 else "#fff"}" fill-opacity=".8"/>')
     ang = h[5] % 180
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice">
-<defs><linearGradient id="g" gradientTransform="rotate({ang} .5 .5)"><stop offset="0" stop-color="{col}"/><stop offset=".65" stop-color="#0a1730"/><stop offset="1" stop-color="#050b18"/></linearGradient>
-<radialGradient id="r" cx="{20 + h[6] % 60}%" cy="{20 + h[7] % 50}%" r="60%"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
-<rect width="640" height="360" fill="url(#g)"/><rect width="640" height="360" fill="url(#r)"/>{dots}{rings}{bars}
-<path d="M0 {250 + h[8] % 60} C 160 {200 + h[9] % 80}, 320 {300 - h[10] % 60}, 640 {220 + h[11] % 70}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
-<g transform="translate(320 168) scale(2.4)"><circle r="46" fill="#fff" fill-opacity=".08"/>{_GLYPH[b]}</g>
-<rect x="0" y="0" width="8" height="360" fill="{col}"/>
-<text x="26" y="334" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="800" letter-spacing="2" fill="#fff" opacity=".9">COMPEPHARMA · {_e(BEAT_LABEL[b].upper())}</text></svg>"""
-    return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=604800, immutable"})
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid slice">
+<defs><linearGradient id="g" gradientTransform="rotate({ang} .5 .5)"><stop offset="0" stop-color="{col}"/><stop offset=".7" stop-color="#0b0f17"/><stop offset="1" stop-color="#05070b"/></linearGradient>
+<radialGradient id="v" cx="50%" cy="45%" r="75%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient></defs>
+<rect width="{W}" height="{H}" fill="url(#g)"/>{"".join(layers)}<rect width="{W}" height="{H}" fill="url(#v)"/>
+<rect x="0" y="{H - 6}" width="{W}" height="6" fill="{acc}"/></svg>"""
+    return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
 INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "9177237c1d4269414fc9178f1355df96")
