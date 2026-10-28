@@ -294,7 +294,43 @@ h2 a:hover,h3 a:hover{color:var(--brand)}
 .statp b{display:block;font:900 24px/1.1 var(--sans)}.statp span{font-size:12.5px;color:var(--mut)}
 .art h2.sh{font:800 24px/1.25 var(--serif);margin:30px 0 12px}
 .srcs li{list-style:none;padding:6px 0;border-bottom:1px solid var(--rule);font-size:14px}
-footer{background:#060d1c;color:#9eabc2;margin-top:56px;padding:44px 0 28px;font-size:14px}
+/* --- STAT-style editorial skin --- */
+:root{--navy:#000;--red:#e4322b}
+body{font-family:var(--sans)}
+.util{background:#000;border-bottom:1px solid #222}
+.mast{background:#000;border:0}.mast .wrap{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-top:16px;padding-bottom:14px}
+.mast .ml{display:flex;gap:18px}.mast .ml a{color:#fff;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.mast .mc{text-align:center}.mast .logo{color:#fff;font-size:50px}.mast .logo b{color:var(--red)}
+.mast .tag{color:#9a9a9a;font-size:11.5px;text-transform:uppercase;letter-spacing:.24em;margin-top:6px}
+.mast .cta{justify-content:flex-end}
+@media(max-width:700px){.mast .wrap{grid-template-columns:1fr auto}.mast .ml{display:none}.mast .mc{text-align:left}.mast .logo{font-size:34px}.mast .tag{display:none}}
+nav.beats{background:#000;border-top:1px solid #2a2a2a;box-shadow:none}
+nav.beats a{font-size:12px;color:#d6d6d6}nav.beats a.on{border-bottom-color:var(--red)}
+.tick{background:#fff;border-bottom:1px solid var(--rule)}
+@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .tick{background:var(--paper)}}
+.lab{border:0;padding:0;color:var(--red);font-size:11.5px;letter-spacing:.1em}
+.hero{background:transparent;border-radius:0;overflow:visible}.hero .hov{position:static;padding:14px 0 0;background:none;color:var(--ink)}
+.hero .lab{color:var(--red)}.hero h2{font:800 40px/1.08 var(--sans);letter-spacing:-.025em;margin:8px 0}.hero h2 a:hover{color:var(--red)}
+.hero .dek{color:var(--mut);font-family:var(--serif);font-size:18px}.hero .by{color:var(--mut)}
+.th,.th.hw{border-radius:0}
+.front{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr) minmax(0,.95fr);gap:28px;border-bottom:1px solid var(--ink);padding-bottom:30px}
+@media(max-width:1200px){.front{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}.front .latest{grid-column:1/-1}}
+@media(max-width:800px){.front{grid-template-columns:1fr}}
+.sec2{display:flex;flex-direction:column;gap:22px;border-left:1px solid var(--rule);padding-left:28px}
+@media(max-width:800px){.sec2{border:0;padding:0}}
+.latest{border-left:1px solid var(--rule);padding-left:24px}.latest .hd{border-top:0;padding-top:0}.latest .hd span{color:var(--red)}
+.lt{padding:11px 0;border-bottom:1px solid var(--rule)}.lt:last-child{border:0}.lt>span{font-size:11.5px;font-weight:700;color:var(--mut);margin-right:8px}
+.lt h4{font:700 15.5px/1.3 var(--sans);margin-top:4px}.lt h4 a:hover{color:var(--red)}
+.hd{border-top:3px solid var(--ink)}.hd span{font-size:13px;letter-spacing:.14em}
+.mini h3,.gc h3,.ic h3,.river h3,.most li{font-family:var(--sans);font-weight:800;letter-spacing:-.01em}
+.gc h3{font-size:18px;line-height:1.25}.gc.big h3{font-size:26px}.river h3{font-size:21px}.ic h3{font-size:19px}.ic.big h3{font-size:28px}
+.op h3{font-family:var(--serif)}
+.btn{border-radius:2px}.btn.teal{background:var(--red)}
+.band.alt{background:#f6f6f4}@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .band.alt{background:var(--tint)}}
+.earn{background:#fff;border-top:0}@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .earn{background:var(--paper)}}
+.art h1{font-family:var(--sans);font-weight:900;letter-spacing:-.025em}
+.dark{background:#000}
+footer{background:#000;color:#9eabc2;margin-top:56px;padding:44px 0 28px;font-size:14px}
 footer .fg{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:30px}@media(max-width:800px){footer .fg{grid-template-columns:1fr 1fr}}
 footer h4{color:#fff;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}footer li{list-style:none;margin:6px 0}
 footer a:hover{color:#fff}footer .logo{font-size:32px;color:#fff}footer .fine{border-top:1px solid #1b2840;margin-top:30px;padding-top:18px;font-size:12.5px}
@@ -363,9 +399,10 @@ def _ticker(c: dict) -> str:
 
 
 def _mast() -> str:
-    return (f'<header class="mast"><div class="wrap"><div><a href="/" class="logo">Compe<b>Pharma</b></a>'
-            f'<div class="tag">The business of pharma: deals, launches, pricing, manufacturing and legal, every day.</div></div>'
-            f'<div class="cta"><a class="btn ghost" href="/insights?type=earnings">Earnings analysis</a><a class="btn" href="/newsletter">Subscribe free</a></div></div></header>')
+    return (f'<header class="mast"><div class="wrap"><div class="ml"><a href="/insights?type=earnings">Earnings</a>'
+            f'<a href="/insights?type=opinion">Opinion</a></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
+            f'<div class="tag">The business of pharma</div></div>'
+            f'<div class="cta"><a class="btn" href="/newsletter">Subscribe free</a></div></div></header>')
 
 
 def _page(title: str, desc: str, path: str, body: str, canonical: str | None = None, ld: list | None = None) -> HTMLResponse:
@@ -410,7 +447,7 @@ def home():
     ld_ = ranked[0]
     tops = [i for i in ranked[1:] if i.get("beat") != ld_.get("beat")][:5] or ranked[1:6]
     used = {ld_["id"]} | {i["id"] for i in tops}
-    riv = [i for i in items if i["id"] not in used][:24]
+    riv = [i for i in items if i["id"] not in used][:34]
     used |= {i["id"] for i in riv}
 
     def band(k, alt):
@@ -453,12 +490,12 @@ def home():
     bands2 = "".join(band(k, n % 2 == 0) for n, k in enumerate(("manufacturing", "pricing", "legal", "earnings", "pipeline")))
     body = f"""{_beatbar("home")}{_ticker(c)}<main>
 <div class="wrap"><div class="front"><div>{hero(ld_)}</div>
-<div><div class="hd"><span>Top stories</span></div>{"".join(mini(i) for i in tops)}</div>
-<div class="adcol">{_ad_box("home-top")}</div></div>
+<div class="sec2">{"".join(gcard(i) for i in tops[:2])}</div>
+<div class="latest"><div class="hd"><span>Latest</span></div>{"".join(f'<div class="lt"><span>{_e(_fmt(i.get("date", ""))[:6])}</span>{_label(i)}<h4>{_a(i, _e(i["title"]))}</h4></div>' for i in sorted(tops[2:] + riv[:7], key=lambda x: x.get("date", ""), reverse=True))}</div></div>
 </div>{earn_html}{op_html}<div class="wrap">
-<div class="cols"><div><div class="hd"><span>Latest news</span></div>{"".join(river(i) for i in riv[:12])}</div>{_side(c, "home", used, ad=False)}</div></div>
+<div class="cols"><div><div class="hd"><span>More top stories</span></div>{"".join(river(i) for i in riv[7:19])}</div>{_side(c, "home", used)}</div></div>
 {an_html}{bands}{ed_html}{_ad_banner("home-banner")}{bands2}
-<div class="wrap"><div class="cols"><div><div class="hd"><span>More news</span></div>{"".join(river(i) for i in riv[12:])}</div><div></div></div></div></main>"""
+<div class="wrap"><div class="cols"><div><div class="hd"><span>More news</span></div>{"".join(river(i) for i in riv[19:])}</div><div></div></div></div></main>"""
     ld = [{"@context": "https://schema.org", "@type": "NewsMediaOrganization", "name": "CompePharma", "url": BASE + "/"}]
     return _page("CompePharma: pharma business news, deals, launches, pricing & manufacturing",
                  "Daily pharma business news: deals and M&A, approvals and launches, marketing, manufacturing and supply, "
