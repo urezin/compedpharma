@@ -341,6 +341,8 @@ footer a:hover{color:#fff}footer .logo{font-size:32px;color:#fff}footer .fine{bo
 .chip{flex:none;border:1px solid #333;border-radius:999px;padding:3px 11px;font-weight:600;color:#eee;white-space:nowrap}
 .th{transition:transform .5s ease,filter .3s}a:hover>.th{transform:scale(1.03);filter:saturate(1.15)}
 a.hi,a.mi,.gc>a,.river>a,.mini>a,.ic>a{display:block;overflow:hidden}
+.river>a{flex:0 0 220px}.mini>a{flex:0 0 112px}.river>a .th.rv,.mini>a .th.sq{width:100%}.mini>a .th.sq{height:76px}
+@media(max-width:700px){.river>a{flex-basis:110px}.mini>a{flex-basis:88px}.mini>a .th.sq{height:62px}}
 .kk{background:var(--red)!important;color:#fff!important;border-radius:2px}.kk.opinion{background:#1f2937!important}
 .lab{position:relative;padding-left:14px}.lab:before{content:"";position:absolute;left:0;top:50%;width:8px;height:8px;margin-top:-4px;background:var(--red)}
 .hero h2{font-size:46px}@media(max-width:700px){.hero h2{font-size:28px}}
