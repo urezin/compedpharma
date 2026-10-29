@@ -30,7 +30,7 @@ VIGIEYE = os.getenv("VIGIEYE_API", "https://vigi-eye.com").rstrip("/")
 BASE = (os.getenv("PORTAL_BASE_URL") or os.getenv("APP_BASE_URL") or os.getenv("RENDER_EXTERNAL_URL")
         or "http://localhost:8000").rstrip("/")
 
-BEATS = [("deals", "Deals & M&A", "#7c3aed"), ("launches", "Approvals & launches", "#0369a1"),
+BEATS = [("deals", "Deals & M&A", "#7c3aed"), ("financing", "Financing", "#be185d"), ("launches", "Approvals & launches", "#0369a1"),
          ("marketing", "Marketing & sales", "#db2777"), ("manufacturing", "Manufacturing & supply", "#b45309"),
          ("pricing", "Pricing & policy", "#047857"), ("legal", "Legal", "#475569"),
          ("earnings", "Earnings", "#0f766e"), ("pipeline", "Pipeline & R&D", "#4338ca"),
@@ -38,7 +38,8 @@ BEATS = [("deals", "Deals & M&A", "#7c3aed"), ("launches", "Approvals & launches
 BEAT_LABEL = {k: v for k, v, _ in BEATS}
 BEAT_COLOR = {k: c for k, _, c in BEATS}
 BEAT_BLURB = {
-    "deals": "Acquisitions, licensing, partnerships and financing across pharma and biotech.",
+    "deals": "Acquisitions, licensing and partnerships across pharma and biotech.",
+    "financing": "IPOs, public offerings, private placements, venture rounds, debt and royalty financings, from company filings.",
     "launches": "New approvals in the US and EU, label expansions and commercial launches.",
     "marketing": "Commercial strategy, DTC and HCP promotion, sales forces and launch performance.",
     "manufacturing": "Plants, CDMOs, supply chains, shortages, recalls and warning letters.",
@@ -305,7 +306,8 @@ body{font-family:var(--sans)}
 .mast .cta{justify-content:flex-end}
 @media(max-width:700px){.mast .wrap{grid-template-columns:1fr auto}.mast .ml{display:none}.mast .mc{text-align:left}.mast .logo{font-size:34px}.mast .tag{display:none}}
 nav.beats{background:#000;border-top:1px solid #2a2a2a;box-shadow:none}
-nav.beats a{font-size:12px;color:#d6d6d6}nav.beats a.on{border-bottom-color:var(--red)}
+nav.beats a{font-size:12px;color:#d6d6d6;padding:15px 12px 13px;letter-spacing:.06em}
+nav.beats .wrap{justify-content:space-between}@media(max-width:1200px){nav.beats .wrap{justify-content:flex-start}}nav.beats a.on{border-bottom-color:var(--red)}
 .tick{background:#fff;border-bottom:1px solid var(--rule)}
 @media (prefers-color-scheme: dark){:root:not([data-theme=light]) .tick{background:var(--paper)}}
 .lab{border:0;padding:0;color:var(--red);font-size:11.5px;letter-spacing:.1em}
@@ -427,10 +429,17 @@ def _side(c: dict, place: str, exclude: set | None = None, ad: bool = True) -> s
     return f'<aside><div class="stick">{_ad_box(place) if ad else ""}{_nl_box(place)}{_most(c, exclude)}{_coming_up(c)}{_vigieye_box()}</div></aside>'
 
 
+# short labels so every section fits on one line of the section bar
+NAV_LABEL = {"deals": "Deals", "financing": "Financing", "launches": "Launches", "marketing": "Marketing",
+             "manufacturing": "Manufacturing", "pricing": "Pricing", "legal": "Legal", "earnings": "Earnings",
+             "pipeline": "Pipeline", "industry": "Industry"}
+
+
 def _beatbar(active: str = "") -> str:
     links = [f'<a class="{"on" if active == "home" else ""}" href="/">Home</a>',
-             f'<a class="{"on" if active == "insights" else ""}" style="--c:#d7263d" href="/insights">Insights &amp; opinion</a>']
-    links += [f'<a class="{"on" if active == k else ""}" style="--c:{c}" href="/news/{k}">{_e(v)}</a>' for k, v, c in BEATS]
+             f'<a class="{"on" if active == "insights" else ""}" style="--c:#d7263d" href="/insights">Insights</a>']
+    links += [f'<a class="{"on" if active == k else ""}" style="--c:{c}" href="/news/{k}">{_e(NAV_LABEL.get(k, v))}</a>'
+              for k, v, c in BEATS]
     return f'<nav class="beats" aria-label="Sections"><div class="wrap">{"".join(links)}</div></nav>'
 
 
@@ -443,8 +452,7 @@ def _ticker(c: dict) -> str:
 
 
 def _mast() -> str:
-    return (f'<header class="mast"><div class="wrap"><div class="ml"><a href="/insights?type=earnings">Earnings</a>'
-            f'<a href="/insights?type=opinion">Opinion</a></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
+    return (f'<header class="mast"><div class="wrap"><div class="ml"></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
             f'<div class="tag">The business of pharma</div></div>'
             f'<div class="cta"><a class="btn" href="/newsletter">Subscribe free</a></div></div></header>')
 
