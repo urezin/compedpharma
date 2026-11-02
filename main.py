@@ -370,6 +370,8 @@ def _startup():
 # Public news portal (the business of pharma) is the homepage; the CRM/HR app lives at /app.
 import portal as _portal  # noqa: E402
 app.include_router(_portal.router)
+import business as _business  # noqa: E402  (enterprise page + market-analysis service)
+app.include_router(_business.router)
 
 
 @app.get("/app", include_in_schema=False)

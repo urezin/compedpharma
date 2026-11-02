@@ -7,7 +7,7 @@ pipeline) for pharma business readers. Its stories come from VigiEye's shared ne
 SEC, novel FDA/EU approvals, recalls and health-care enforcement from official sources, and
 writes every article from scratch (/api/story). Outbound links go only to official sources.
 
-Routes: /  /news/{beat}  /story/{id}  /thumb/{beat}/{seed}.svg  /robots.txt  /sitemap.xml
+Routes: /  /news/{beat}  /story/{id}  (/enterprise, /market-analysis: business.py)  /thumb/{beat}/{seed}.svg  /robots.txt  /sitemap.xml
 The CRM/HR product lives at /app.
 """
 from __future__ import annotations
@@ -196,7 +196,7 @@ body{font:16px/1.55 var(--sans);color:var(--ink);background:var(--paper);-webkit
 a{color:inherit;text-decoration:none}img{max-width:100%}
 .wrap{max-width:1480px;margin:0 auto;padding:0 32px}@media(max-width:700px){.wrap{padding:0 16px}}
 .util{background:var(--navy);color:#aab6cc;font-size:12.5px}.util .wrap{display:flex;justify-content:space-between;align-items:center;height:34px;gap:12px}
-.util a{color:#e5ebf5;font-weight:600;margin-left:18px}.util a:hover{color:#fff}@media(max-width:700px){.util .d{display:none}.util .wrap{justify-content:flex-end}.mast .cta .ghost{display:none}.logo{font-size:38px}}
+.util a{color:#e5ebf5;font-weight:600;margin-left:18px}@media(max-width:700px){.util a{margin-left:12px}.util .vx{display:none}.util a{white-space:nowrap}}.util a:hover{color:#fff}@media(max-width:700px){.util .d{display:none}.util .wrap{justify-content:flex-end}.mast .cta .ghost{display:none}.logo{font-size:38px}}
 .mast{border-bottom:1px solid var(--rule);background:var(--paper)}
 .mast .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-top:20px;padding-bottom:18px;flex-wrap:wrap}
 .logo{font:900 46px/1 var(--sans);letter-spacing:-.045em}.logo b{color:var(--brand)}.logo i{font-style:normal;color:var(--red)}
@@ -452,7 +452,7 @@ def _ticker(c: dict) -> str:
 
 
 def _mast() -> str:
-    return (f'<header class="mast"><div class="wrap"><div class="ml"></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
+    return (f'<header class="mast"><div class="wrap"><div class="ml"><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
             f'<div class="tag">The business of pharma</div></div>'
             f'<div class="cta"><a class="btn" href="/newsletter">Subscribe free</a></div></div></header>')
 
@@ -467,7 +467,7 @@ def _page(title: str, desc: str, path: str, body: str, canonical: str | None = N
 <meta property="og:description" content="{_e(desc)}"><meta property="og:url" content="{_e(can)}"><meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0a1730">{FONTS}<style>{CSS}</style>{lds}</head><body>
 <div class="util"><div class="wrap"><span class="d">{_e(date.today().strftime("%A %d %B %Y"))}</span>
-<span><a href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app">CompePharma CRM &amp; HR →</a></span></div></div>
+<span><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
 {_mast()}{body}
 <footer><div class="wrap"><div class="fg"><div><div class="logo">Compe<b style="color:#2dd4bf">Pharma</b></div>
 <p style="margin-top:10px;max-width:420px">Pharma business news written by CompePharma's editorial system from company filings with the SEC and
@@ -475,7 +475,7 @@ official FDA, EMA and European Commission records. Not investment advice.</p></d
 <div><h4>Sections</h4><ul>{beats_li}</ul></div>
 <div><h4>Regulatory</h4><ul><li><a href="{VIGIEYE}/">VigiEye news</a></li><li><a href="{VIGIEYE}/pdufa">PDUFA calendar</a></li>
 <li><a href="{VIGIEYE}/approvals">Approvals</a></li><li><a href="{VIGIEYE}/safety">Safety</a></li><li><a href="{VIGIEYE}/newsletter">Daily email</a></li></ul></div>
-<div><h4>Company</h4><ul><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
+<div><h4>Company</h4><ul><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
 <div class="fine">© {date.today().year} CompePharma. Every story is original reporting by CompePharma; outbound links go only to official
 sources (regulators and SEC filings).</div></div></footer></body></html>""")
 
@@ -982,7 +982,7 @@ def news_sitemap():
 @router.get("/sitemap.xml", include_in_schema=False)
 def sitemap():
     today = date.today().isoformat()
-    urls = ["/", "/insights", "/newsletter"] + [f"/news/{k}" for k, _, _ in BEATS] + \
+    urls = ["/", "/insights", "/newsletter", "/enterprise", "/market-analysis"] + [f"/news/{k}" for k, _, _ in BEATS] + \
            [f"/insights/{a['slug']}" for a in (_load().get("insights") or [])[:200]]
     body = "".join(f"<url><loc>{_e(BASE + u)}</loc><lastmod>{today}</lastmod><changefreq>hourly</changefreq></url>" for u in urls)
     return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>',
