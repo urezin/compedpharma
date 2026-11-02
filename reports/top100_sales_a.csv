@@ -1,0 +1,61 @@
+brand,inn,company,s2025,s2024,ta,src
+Keytruda,pembrolizumab,Merck & Co,31.68,29.48,Oncology,https://www.msd.com/news/merck-co-inc-rahway-n-j-usa-announces-fourth-quarter-and-full-year-2025-financial-results-highlights-progress-advancing-broad-diverse-pipeline/
+Gardasil/Gardasil 9,HPV vaccine,Merck & Co,5.23,8.58,Vaccines,msd
+Januvia/Janumet,sitagliptin,Merck & Co,2.54,2.27,Diabetes & obesity,msd
+ProQuad/M-M-R II/Varivax,MMR & varicella vaccines,Merck & Co,2.45,2.49,Vaccines,msd
+Bridion,sugammadex,Merck & Co,1.84,1.76,Bone & other,msd
+Mounjaro,tirzepatide,Eli Lilly,22.97,11.54,Diabetes & obesity,https://investor.lilly.com/news-releases/news-release-details/lilly-reports-fourth-quarter-2025-financial-results-and-provides
+Zepbound,tirzepatide,Eli Lilly,13.54,4.93,Diabetes & obesity,lilly
+Verzenio,abemaciclib,Eli Lilly,5.72,5.31,Oncology,lilly
+Trulicity,dulaglutide,Eli Lilly,4.28,5.26,Diabetes & obesity,lilly
+Taltz,ixekizumab,Eli Lilly,3.56,,Immunology & inflammation,lilly
+Jardiance,empagliflozin,Boehringer Ingelheim / Eli Lilly,9.93,9.05,Diabetes & obesity,https://flcube.com/wp-content/uploads/2026/03/Boehringer-Ingelheim-Annual-Report-Highlights-2025.pdf
+Ozempic,semaglutide,Novo Nordisk,19.24,17.47,Diabetes & obesity,https://www.sec.gov/Archives/edgar/data/353278/000035327826000006/caq42025.htm
+Wegovy,semaglutide,Novo Nordisk,11.98,8.45,Diabetes & obesity,novo
+Rybelsus,oral semaglutide,Novo Nordisk,3.35,3.38,Diabetes & obesity,novo
+Dupixent,dupilumab,Sanofi / Regeneron,17.76,14.15,Immunology & inflammation,https://www.sec.gov/Archives/edgar/data/1121404/000112140426000001/pressreleaseq42025english.htm
+Beyfortus,nirsevimab,Sanofi / AstraZeneca,2.01,1.82,Vaccines,sanofi
+Lantus,insulin glargine,Sanofi,1.96,1.76,Diabetes & obesity,sanofi
+Toujeo,insulin glargine 300,Sanofi,1.52,1.33,Diabetes & obesity,sanofi
+Eylea / Eylea HD,aflibercept,Regeneron / Bayer,7.90,,Ophthalmology,https://investor.regeneron.com/news-releases/news-release-details/regeneron-reports-fourth-quarter-and-full-year-2025-financial
+Skyrizi,risankizumab,AbbVie,17.56,11.72,Immunology & inflammation,https://news.abbvie.com/2026-02-04-AbbVie-Reports-Full-Year-and-Fourth-Quarter-2025-Financial-Results
+Rinvoq,upadacitinib,AbbVie,8.30,5.97,Immunology & inflammation,abbvie
+Humira,adalimumab,AbbVie,4.54,8.99,Immunology & inflammation,abbvie
+Botox Therapeutic,onabotulinumtoxinA,AbbVie,3.77,3.28,Neurology,abbvie
+Vraylar,cariprazine,AbbVie,3.62,3.27,Neurology,abbvie
+Imbruvica,ibrutinib,AbbVie / J&J,2.87,3.35,Oncology,abbvie
+Venclexta,venetoclax,AbbVie / Roche,2.79,2.58,Oncology,abbvie
+Botox Cosmetic,onabotulinumtoxinA,AbbVie,2.60,2.72,Bone & other,abbvie
+Creon,pancrelipase,AbbVie,1.51,1.38,Bone & other,abbvie
+Eliquis,apixaban,BMS / Pfizer,14.44,13.33,Cardiovascular & renal,https://www.boardroomalpha.com/sec/bmy-8-k-2026-02-05-0000014272-26-000002/a2025q4ex991.htm
+Opdivo,nivolumab,BMS / Ono,10.05,9.30,Oncology,bms
+Orencia,abatacept,BMS,3.71,3.68,Immunology & inflammation,bms
+Revlimid,lenalidomide,BMS,2.95,5.77,Oncology,bms
+Yervoy,ipilimumab,BMS,2.90,2.53,Oncology,bms
+Pomalyst/Imnovid,pomalidomide,BMS,2.73,3.55,Oncology,bms
+Reblozyl,luspatercept,BMS,2.33,1.77,Haematology,bms
+Prevnar family,pneumococcal conjugate vaccine,Pfizer,6.49,6.41,Vaccines,https://www.sec.gov/Archives/edgar/data/78003/000007800326000005/pfe-12312025xex99.htm
+Vyndaqel family,tafamidis,Pfizer,6.38,5.45,Cardiovascular & renal,pfizer
+Comirnaty,COVID-19 mRNA vaccine,Pfizer / BioNTech,4.37,5.35,Vaccines,pfizer
+Ibrance,palbociclib,Pfizer,4.12,4.37,Oncology,pfizer
+Paxlovid,nirmatrelvir/ritonavir,Pfizer,2.36,5.72,Infectious disease & HIV,pfizer
+Padcev,enfortumab vedotin,Pfizer / Astellas,1.94,1.59,Oncology,pfizer
+Darzalex (incl. Faspro),daratumumab,J&J,14.35,11.67,Oncology,https://d18rn0p25nwr6d.cloudfront.net/CIK-0000200406/35975f5e-1620-40f3-8303-9257b1f68897.pdf
+Stelara,ustekinumab,J&J,6.08,10.36,Immunology & inflammation,jnj
+Tremfya,guselkumab,J&J,5.16,3.67,Immunology & inflammation,jnj
+Invega Sustenna/Trinza,paliperidone palmitate,J&J,3.81,4.22,Neurology,jnj
+Erleada,apalutamide,J&J,3.57,3.00,Oncology,jnj
+Simponi/Simponi Aria,golimumab,J&J,2.67,2.19,Immunology & inflammation,jnj
+Xarelto,rivaroxaban,J&J / Bayer,5.28,,Cardiovascular & renal,jnj+bayer
+Opsumit/Opsynvi,macitentan,J&J,2.33,2.23,Cardiovascular & renal,jnj
+Uptravi,selexipag,J&J,1.90,1.82,Cardiovascular & renal,jnj
+Carvykti,ciltacabtagene autoleucel,J&J / Legend,1.89,0.96,Oncology,jnj
+Remicade,infliximab,J&J,1.77,1.61,Immunology & inflammation,jnj
+Spravato,esketamine,J&J,1.70,1.08,Neurology,jnj
+Libtayo,cemiplimab,Regeneron,1.45,,Oncology,regeneron
+Winrevair,sotatercept,Merck & Co,1.44,,Cardiovascular & renal,msd
+Nurtec ODT,rimegepant,Pfizer,1.42,,Neurology,pfizer
+Edurant,rilpivirine,J&J,1.49,,Infectious disease & HIV,jnj
+Breyanzi,lisocabtagene maraleucel,BMS,1.36,,Oncology,bms
+Mavyret,glecaprevir/pibrentasvir,AbbVie,1.32,,Infectious disease & HIV,abbvie
+Ubrelvy,ubrogepant,AbbVie,1.27,,Neurology,abbvie

@@ -270,6 +270,11 @@ and portfolios. Revenue scenarios for {HORIZON}, with every assumption stated an
 <div class="row"><a class="btn" href="#catalogue">Find a product</a><a class="btn ghost" href="?kind=report-custom#order">Request a custom analysis</a></div></div></section>
 <main class="wrap">
 <section class="bz-sec">{nums}</section>
+<section class="bz-sec"><a class="bz-card hl" href="/market-analysis/top-100-drugs" style="border-top-color:var(--red);display:block">
+<div class="k" style="color:var(--red);font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase">Free report</div>
+<h3 style="font-size:24px;margin-top:6px">The top 100 drugs: a 5-year outlook by therapeutic area, 2026–2031</h3>
+<p>$546bn of 2025 sales across 12 therapy areas, projected drug by drug with patent expiries, Medicare negotiated prices and new launches.
+See the method our ready-to-go reports use. <b style="color:var(--red)">Read the report →</b></p></a></section>
 
 <section class="bz-sec"><div class="k">Two ways to buy</div><h2 class="t">Ready-to-go or built around your question</h2>
 <div class="bz-g3">

@@ -1002,7 +1002,7 @@ def news_sitemap():
 @router.get("/sitemap.xml", include_in_schema=False)
 def sitemap():
     today = date.today().isoformat()
-    urls = ["/", "/insights", "/newsletter", "/enterprise", "/market-analysis"] + [f"/news/{k}" for k, _, _ in BEATS] + \
+    urls = ["/", "/insights", "/newsletter", "/enterprise", "/market-analysis", "/market-analysis/top-100-drugs"] + [f"/news/{k}" for k, _, _ in BEATS] + \
            [f"/insights/{a['slug']}" for a in (_load().get("insights") or [])[:200]]
     body = "".join(f"<url><loc>{_e(BASE + u)}</loc><lastmod>{today}</lastmod><changefreq>hourly</changefreq></url>" for u in urls)
     return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>',

@@ -372,6 +372,8 @@ import portal as _portal  # noqa: E402
 app.include_router(_portal.router)
 import business as _business  # noqa: E402  (enterprise page + market-analysis service)
 app.include_router(_business.router)
+import report_top100 as _report_top100  # noqa: E402  (top-100 drugs 5-year outlook report)
+app.include_router(_report_top100.router)
 
 
 @app.get("/app", include_in_schema=False)
