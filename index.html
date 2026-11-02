@@ -5,158 +5,201 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CompePharma — Modular CRM &amp; HR</title>
 <meta name="description" content="A modular CRM + HR platform. Activate only the modules you need — CRM, HR, Recruiting, and Document Center.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0a1730">
 <style>
+  /* Same tokens as the CompePharma news site (portal.py) so the app reads as one brand. */
   :root{
-    --ink:#0d1b1a;--ink-2:#38514e;--muted:#6a807d;--line:#e2eae8;
-    --bg:#fff;--soft:#f2f7f6;--brand:#0e9c8a;--brand-700:#0b7c6e;--brand-050:#e6f6f3;
-    --accent:#1f6feb;--danger:#e0523f;--gold:#f5a623;--green:#0f9d58;
-    --radius:14px;--shadow:0 1px 2px rgba(13,27,26,.06),0 8px 24px rgba(13,27,26,.07);
-    --shadow-lg:0 14px 44px rgba(13,27,26,.16);
-    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --ink:#0d1321;--ink-2:#3a4456;--muted:#5d6677;--line:#e3e6eb;
+    --paper:#fff;--soft:#f3f5f8;--navy:#0a1730;--red:#d7263d;
+    --brand:#0e9c8a;--brand-700:#0b7c6e;--brand-050:#e6f6f3;
+    --accent:#1f6feb;--danger:#d7263d;--gold:#f5a623;--green:#0f9d58;
+    --radius:6px;--shadow:none;--shadow-lg:0 14px 44px rgba(10,23,48,.22);
+    --font:Inter,system-ui,"Segoe UI",Roboto,sans-serif;
+    --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
   }
+  @media (prefers-color-scheme: dark){:root:not([data-theme=light]){
+    --ink:#e7eaf0;--ink-2:#c3cbd8;--muted:#9aa4b5;--line:#1f2a3a;--paper:#0a0f18;--soft:#0f1622;
+    --brand-050:#0f2a27;--brand-700:#2dd4bf}}
   *{box-sizing:border-box}
   html,body{margin:0}
-  body{font-family:var(--font);color:var(--ink);background:var(--soft);line-height:1.5;-webkit-font-smoothing:antialiased}
+  body{font:16px/1.55 var(--font);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;font-family:inherit;
-    font-weight:650;font-size:14.5px;border-radius:10px;padding:10px 16px;transition:.15s;line-height:1}
-  .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-700)}
-  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn-ghost:hover{border-color:var(--ink-2)}
-  .btn-sm{padding:7px 12px;font-size:13px}
-  .btn-lg{padding:13px 22px;font-size:15px}
-  .btn:disabled{opacity:.55;cursor:default}
-  input,select,textarea{font-family:inherit;font-size:14px}
+  h1,h2,h3{font-family:var(--serif);font-weight:800;letter-spacing:-.01em}
+  .wrap{max-width:1480px;margin:0 auto;padding:0 32px}@media(max-width:700px){.wrap{padding:0 16px}}
 
-  /* ---------- top bar ---------- */
-  header{height:60px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
-    gap:16px;padding:0 22px;position:sticky;top:0;z-index:30}
-  .logo{display:flex;align-items:center;gap:9px;font-weight:820;font-size:19px;letter-spacing:-.4px}
-  .logo .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#3ad0b6);
-    display:grid;place-items:center;color:#fff;font-size:15px}
+  /* buttons: square, heavy, red like the news site */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;font-family:inherit;
+    font-weight:800;font-size:13.5px;letter-spacing:.02em;border-radius:4px;padding:11px 18px;transition:.15s;line-height:1}
+  .btn:hover{filter:brightness(1.08)}
+  .btn-primary{background:var(--red);color:#fff}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}.btn-ghost:hover{background:var(--soft)}
+  .btn-teal{background:var(--brand);color:#fff}
+  .btn-sm{padding:8px 13px;font-size:12.5px}
+  .btn-lg{padding:13px 22px;font-size:14px}
+  .btn:disabled{opacity:.55;cursor:default}
+  input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);background:var(--paper)}
+
+  /* ---------- utility bar + masthead (mirrors the news site) ---------- */
+  .util{background:var(--navy);color:#aab6cc;font-size:12.5px}
+  .util .wrap{display:flex;justify-content:space-between;align-items:center;height:34px;gap:12px}
+  .util a{color:#e5ebf5;font-weight:600;margin-left:18px}.util a:hover{color:#fff}.util a.on{color:#fff;box-shadow:inset 0 -2px 0 var(--red)}
+  @media(max-width:700px){.util .d,.util .vx{display:none}.util .wrap{justify-content:flex-end}.util a{margin-left:12px;white-space:nowrap}}
+  header{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+  header .wrap{display:flex;align-items:center;gap:16px;height:72px}
+  .logo{display:inline-block;white-space:nowrap;font:900 32px/1 var(--font);letter-spacing:-.045em}
   .logo b{color:var(--brand)}
+  .logo .prod{font:800 11.5px/1 var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--paper);background:var(--navy);padding:5px 8px;border-radius:3px;position:relative;top:-6px;margin-left:12px;letter-spacing:.1em}
+  @media (prefers-color-scheme: dark){:root:not([data-theme=light]) .logo .prod{background:var(--red);color:#fff}}
+  @media(max-width:600px){.logo{font-size:25px}.logo .prod{display:none}}
   .spacer{flex:1}
+  #topauth{display:flex;gap:8px;align-items:center}
   .acct{position:relative}
-  .avatar{width:36px;height:36px;border-radius:50%;background:var(--brand-050);color:var(--brand-700);
-    display:grid;place-items:center;font-weight:800;cursor:pointer;border:1px solid var(--line)}
-  .menu{position:absolute;right:0;top:46px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;
+    display:grid;place-items:center;font-weight:800;cursor:pointer}
+  .menu{position:absolute;right:0;top:46px;background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:4px;
     box-shadow:var(--shadow-lg);min-width:220px;padding:8px;display:none}
-  .menu.open{display:block}.menu .mi{display:block;padding:9px 12px;border-radius:8px;font-size:14px;cursor:pointer}
+  .menu.open{display:block}.menu .mi{display:block;padding:9px 12px;border-radius:3px;font-size:14px;cursor:pointer}
   .menu .mi:hover{background:var(--soft)}.menu .sep{height:1px;background:var(--line);margin:6px 4px}
 
   /* ---------- shell ---------- */
-  .shell{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 60px)}
-  .side{background:#fff;border-right:1px solid var(--line);padding:16px 12px}
-  .side .grp{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:14px 8px 6px;font-weight:750}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14.5px;color:var(--ink-2)}
-  .nav-item:hover{background:var(--soft)}
-  .nav-item.active{background:var(--brand-050);color:var(--brand-700)}
+  .shell{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 106px)}
+  .side{background:var(--soft);border-right:1px solid var(--line);padding:18px 12px}
+  .side .grp{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 10px 6px;font-weight:900}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:3px;cursor:pointer;font-weight:700;font-size:14px;color:var(--ink-2);border-left:3px solid transparent}
+  .nav-item:hover{background:var(--paper);color:var(--ink)}
+  .nav-item.active{background:var(--paper);color:var(--ink);border-left-color:var(--red)}
   .nav-item .ico{width:22px;text-align:center}
   .nav-item.locked{color:var(--muted)}
   .nav-item .lk{margin-left:auto;font-size:12px;opacity:.6}
-  main{padding:26px 30px;max-width:1180px}
-  .page-h{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
-  .page-h h1{font-size:26px;letter-spacing:-.5px;margin:0}
-  .page-h p{margin:4px 0 0;color:var(--muted);font-size:14.5px}
+  main{padding:28px 34px;max-width:1240px}
+  .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:16px}
+  .page-h h1{font:900 34px/1.05 var(--font);letter-spacing:-.03em;margin:0}
+  .page-h p{margin:6px 0 0;color:var(--muted);font-size:15px}
 
   /* ---------- cards / stats ---------- */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
-  .stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
-  .stat .v{font-size:28px;font-weight:820;letter-spacing:-.5px}
-  .stat .k{font-size:13px;color:var(--muted);margin-top:2px}
-  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
-  .panel-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
-  .panel-h h3{margin:0;font-size:16px}
+  .stat{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:0;padding:14px 18px}
+  .stat .v{font:900 30px/1.1 var(--font);letter-spacing:-.03em}
+  .stat .k{font-size:11.5px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.09em;font-weight:800}
+  .panel{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:0;margin-bottom:22px;overflow:hidden}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--line)}
+  .panel-h h3{margin:0;font:900 13px/1.2 var(--font);letter-spacing:.1em;text-transform:uppercase}
   .panel-b{padding:6px 0}
-  .subtabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-  .subtab{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 15px;font-size:13.5px;font-weight:650;color:var(--ink-2);cursor:pointer}
-  .subtab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .subtabs{display:flex;gap:2px;margin-bottom:18px;flex-wrap:wrap;background:var(--navy);padding:0 6px}
+  .subtab{border:0;border-bottom:3px solid transparent;background:transparent;padding:13px 14px 11px;font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#dfe6f2;cursor:pointer;font-family:inherit}
+  .subtab:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .subtab.active{color:#fff;border-bottom-color:var(--red)}
 
   table{width:100%;border-collapse:collapse;font-size:14px}
-  th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:10px 18px;border-bottom:1px solid var(--line)}
+  th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:800;padding:10px 18px;border-bottom:1px solid var(--line)}
   td{padding:11px 18px;border-bottom:1px solid var(--line)}
   tr:last-child td{border-bottom:0}
-  .pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700}
+  tbody tr:hover td{background:var(--soft)}
+  .pill{display:inline-block;padding:3px 8px;border-radius:3px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
   .pill.Lead,.pill.Applied,.pill.Pending{background:#eef2f7;color:#5b6b80}
   .pill.Qualified,.pill.Screen{background:#e9f0ff;color:#2b57c9}
   .pill.Proposal,.pill.Interview{background:#fff2e0;color:#b5730d}
   .pill.Won,.pill.Hired,.pill.Approved,.pill.Active{background:#e7f8ef;color:#0b7a43}
   .pill.Lost,.pill.Rejected,.pill.Declined{background:#fdecea;color:#c0392b}
   .pill.Offer{background:#efe7ff;color:#6b3fd4}
-  select.mini{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-weight:650;font-size:12.5px;background:#fff;cursor:pointer}
+  select.mini{border:1px solid var(--line);border-radius:3px;padding:5px 8px;font-weight:700;font-size:12.5px;cursor:pointer}
   .empty{padding:26px 18px;color:var(--muted);text-align:center;font-size:14px}
 
   /* inline add form */
   .addbar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;background:var(--soft);border-top:1px solid var(--line)}
-  .addbar input,.addbar select{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 11px;min-width:120px;flex:1}
-  .addbar textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
+  .addbar input,.addbar select{height:38px;border:1px solid var(--line);border-radius:4px;padding:0 11px;min-width:120px;flex:1}
+  .addbar textarea{border:1px solid var(--line);border-radius:4px;padding:9px 11px;width:100%}
 
   /* ---------- module store ---------- */
-  .mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
-  .mod{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column}
-  .mod.owned{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand-050)}
-  .mod .ic{font-size:34px}
-  .mod h3{margin:10px 0 4px;font-size:18px}
-  .mod .tl{color:var(--muted);font-size:14px;margin:0 0 12px}
+  .mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px}
+  .mod{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:0;padding:20px;display:flex;flex-direction:column}
+  .mod.owned{border-top-color:var(--brand)}
+  .mod .ic{font-size:30px}
+  .mod h3{margin:10px 0 4px;font-size:22px}
+  .mod .tl{color:var(--muted);font-size:14.5px;margin:0 0 12px}
   .mod ul{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:7px}
-  .mod li{font-size:13.5px;color:var(--ink-2);display:flex;gap:8px}
-  .mod li .ck{color:var(--green);font-weight:900}
-  .mod .price{font-weight:820;font-size:22px;margin-bottom:14px}
-  .mod .price small{font-size:13px;color:var(--muted);font-weight:600}
+  .mod li{font-size:14px;color:var(--ink-2);display:flex;gap:8px}
+  .mod li .ck{color:var(--brand);font-weight:900}
+  .mod .price{font:900 26px/1 var(--font);letter-spacing:-.03em;margin-bottom:14px}
+  .mod .price small{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:0}
   .mod .btn{margin-top:auto}
-  .owned-tag{display:inline-flex;align-items:center;gap:6px;color:var(--brand-700);font-weight:750;font-size:14px}
-  .bundle{background:linear-gradient(120deg,#0d1b1a,#12403a);color:#fff;border-radius:16px;padding:24px;display:flex;
-    align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:20px}
-  .bundle h3{margin:0 0 4px;font-size:20px}.bundle p{margin:0;color:#bfe0d9;font-size:14.5px}
-  .bundle .price{font-size:26px;font-weight:850}
+  .owned-tag{display:inline-flex;align-items:center;gap:6px;color:var(--brand);font-weight:900;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+  .bundle{background:var(--navy);color:#fff;border-radius:0;border-top:4px solid var(--red);padding:24px;display:flex;
+    align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px}
+  .bundle h3{margin:0 0 4px;font-size:24px;color:#fff}.bundle p{margin:0;color:#c3cede;font-size:14.5px}
+  .bundle .price{font:900 30px/1 var(--font);letter-spacing:-.03em}
 
-  /* ---------- auth / landing ---------- */
-  .land{max-width:1120px;margin:0 auto;padding:40px 22px}
-  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:30px 0 50px}
-  .hero h1{font-size:44px;line-height:1.08;letter-spacing:-1.2px;margin:0 0 16px}
+  /* ---------- daily email ---------- */
+  .daily{background:var(--navy);color:#e5ebf5;border-top:4px solid var(--brand);padding:22px 24px;display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 22px}
+  .daily .k{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#5eead4}
+  .daily h3{color:#fff;margin:6px 0 4px;font-size:24px}.daily p{margin:0;color:#c3cede;font-size:14.5px;max-width:56ch}
+  .daily form{display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:260px;max-width:440px}
+  .daily input{flex:1;min-width:180px;height:42px;padding:0 12px;border:1px solid #23314a;border-radius:4px;background:#0f1d38;color:#fff}
+  .daily input::placeholder{color:#8a97ad}
+  .daily .done{font-weight:800;color:#5eead4}
+
+  /* ---------- landing ---------- */
+  .land{max-width:1180px;margin:0 auto;padding:30px 32px 10px}
+  .kicker{display:inline-block;font-weight:800;font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--red);border-left:3px solid var(--red);padding-left:7px;line-height:1.1}
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:24px 0 46px;border-bottom:1px solid var(--line);margin-bottom:34px}
+  .hero h1{font:800 50px/1.06 var(--serif);letter-spacing:-.015em;margin:14px 0 16px}
   .hero h1 span{color:var(--brand)}
-  .hero p{font-size:18px;color:var(--ink-2);margin:0 0 24px;max-width:40ch}
-  .hero-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-lg);padding:22px}
-  .hero-card .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-weight:600}
+  .hero p{font:19px/1.55 var(--serif);color:var(--ink-2);margin:0 0 24px;max-width:44ch}
+  .hero-card{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);padding:6px 20px 10px}
+  .hero-card h4{margin:12px 0 4px;font:900 13px/1 var(--font);letter-spacing:.1em;text-transform:uppercase}
+  .hero-card .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);font:700 16px/1.3 var(--serif)}
   .hero-card .row:first-of-type{border-top:0}
-  .hero-card .row .i{width:34px;height:34px;border-radius:9px;background:var(--brand-050);display:grid;place-items:center;font-size:18px}
+  .hero-card .row .i{width:34px;height:34px;border-radius:3px;background:var(--soft);display:grid;place-items:center;font-size:18px}
+  .sec-h{display:flex;align-items:baseline;justify-content:space-between;border-top:4px solid var(--ink);padding-top:10px;margin:0 0 6px}
+  .sec-h span{font-weight:900;font-size:14px;letter-spacing:.1em;text-transform:uppercase}
 
-  .overlay{position:fixed;inset:0;background:rgba(8,20,18,.55);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:44px 16px;overflow:auto}
+  footer{background:#000;color:#9eabc2;margin-top:56px;padding:40px 0 26px;font-size:14px}
+  footer .fg{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:30px}@media(max-width:800px){footer .fg{grid-template-columns:1fr 1fr}}
+  footer h4{color:#fff;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 10px;font-family:var(--font);font-weight:900}
+  footer ul{margin:0;padding:0}footer li{list-style:none;margin:6px 0}
+  footer a:hover{color:#fff}footer .logo{font-size:30px;color:#fff}footer .fine{border-top:1px solid #1b2840;margin-top:28px;padding-top:16px;font-size:12.5px}
+
+  .overlay{position:fixed;inset:0;background:rgba(10,23,48,.6);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:44px 16px;overflow:auto}
   .overlay.open{display:flex}
-  .modal{background:#fff;border-radius:16px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);padding:28px;position:relative}
+  .modal{background:var(--paper);border-top:4px solid var(--ink);border-radius:4px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);padding:28px;position:relative}
   .modal.wide{max-width:620px}
-  .modal.wide input,.modal.wide select,.modal.wide textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 11px;font:inherit;font-size:13.5px;box-sizing:border-box}
-  .modal.wide input:focus,.modal.wide select:focus,.modal.wide textarea:focus{outline:none;border-color:var(--brand)}
+  .modal.wide input,.modal.wide select,.modal.wide textarea{width:100%;border:1px solid var(--line);border-radius:4px;padding:8px 11px;font:inherit;font-size:13.5px;box-sizing:border-box}
+  .modal.wide input:focus,.modal.wide select:focus,.modal.wide textarea:focus{outline:none;border-color:var(--ink)}
   .stepper{display:flex;flex-direction:column;gap:10px}
-  .stp{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
-  .stp.done{background:#f6fbf8;border-color:#cdeadd}
-  .stp.act{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-050)}
-  .stp.rej{background:#fdf4f3;border-color:#f3cfca}
+  .stp{border:1px solid var(--line);border-radius:4px;padding:12px 14px;background:var(--paper)}
+  .stp.done{background:var(--brand-050);border-color:#cdeadd}
+  .stp.act{border-color:var(--ink);border-left:4px solid var(--red)}
+  .stp.rej{background:#fdf4f3;border-color:#f3cfca;color:#0d1321}
   .stp.wait{background:var(--soft);opacity:.85}
   .stp-h{display:flex;align-items:center;gap:8px;font-size:14.5px}
   .stp-b{font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.5}
   .modal-x{position:absolute;top:14px;right:16px;font-size:24px;color:var(--muted);cursor:pointer;line-height:1}
-  .modal h2{margin:0 0 4px;font-size:22px}
-  .modal .swi{color:var(--muted);font-size:14px;margin:0 0 18px}.modal .swi a{color:var(--brand);font-weight:650;cursor:pointer}
-  .field{margin-bottom:12px}.field label{display:block;font-size:13px;font-weight:650;margin-bottom:5px;color:var(--ink-2)}
-  .field input{width:100%;height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px}
-  .field input:focus,.addbar input:focus,.addbar select:focus{outline:none;border-color:var(--brand)}
-  .err{background:#fdecea;color:#c0392b;border-radius:8px;padding:9px 12px;font-size:13.5px;margin-bottom:12px;display:none}
+  .modal h2{margin:0 0 4px;font-size:26px}
+  .modal .swi{color:var(--muted);font-size:14px;margin:0 0 18px}.modal .swi a{color:var(--red);font-weight:700;cursor:pointer}
+  .field{margin-bottom:12px}.field label{display:block;font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;margin-bottom:6px;color:var(--ink-2)}
+  .field input{width:100%;height:42px;border:1px solid var(--line);border-radius:4px;padding:0 12px}
+  .field input:focus,.addbar input:focus,.addbar select:focus{outline:none;border-color:var(--ink)}
+  .err{background:#fdecea;color:#c0392b;border-radius:4px;padding:9px 12px;font-size:13.5px;margin-bottom:12px;display:none}
   .err.show{display:block}
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;box-shadow:var(--shadow-lg);z-index:80;display:none}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;border-left:4px solid var(--red);padding:12px 18px;border-radius:3px;font-size:14px;box-shadow:var(--shadow-lg);z-index:80;display:none}
   .toast.show{display:block}
-  .lockbox{background:#fff;border:1px dashed var(--line);border-radius:16px;padding:40px;text-align:center;box-shadow:var(--shadow)}
+  .lockbox{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);padding:40px;text-align:center}
   .lockbox .ic{font-size:40px}
   .lockbox h2{margin:12px 0 6px}.lockbox p{color:var(--muted);margin:0 0 18px}
-  @media(max-width:820px){.shell{grid-template-columns:1fr}.side{display:none}.hero{grid-template-columns:1fr}.hero-card{display:none}}
+  @media(max-width:820px){.shell{grid-template-columns:1fr}.side{display:none}.hero{grid-template-columns:1fr}.hero-card{display:none}.hero h1{font-size:34px}main{padding:22px 16px}.land{padding:20px 16px}}
 </style>
 </head>
 <body>
 
-<header>
-  <a class="logo" href="/app"><span class="mark">C</span>Compe<b>Pharma</b></a>
+<div class="util"><div class="wrap"><span class="d" id="today"></span>
+  <span><a href="/">News</a><a href="/insights">Insights</a><a href="/newsletter">Daily email</a><a class="vx" href="/market-analysis">Market analysis</a><a class="vx" href="/enterprise">Enterprise</a><a class="vx" href="https://vigi-eye.com/?utm_source=compepharma">VigiEye regulatory news</a><a class="on" href="/app">CRM &amp; HR</a></span></div></div>
+<header><div class="wrap">
+  <a class="logo" href="/app">Compe<b>Pharma</b><span class="prod">CRM &amp; HR</span></a>
   <div class="spacer"></div>
   <div id="topauth"></div>
-</header>
+</div></header>
 
 <div id="root"></div>
 <div class="toast" id="toast"></div>
@@ -193,6 +236,7 @@ const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;
 const money=n=>"$"+Number(n||0).toLocaleString();
 const dateOf=s=>s?new Date(s).toLocaleDateString():"";
 
+(function(){const d=document.getElementById("today");if(d)d.textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});})();
 async function boot(){
   const {data}=await api("/api/me");
   ME=data;
@@ -229,6 +273,7 @@ function renderLanding(){
   <div class="land">
     <div class="hero">
       <div>
+        <span class="kicker">CompePharma CRM &amp; HR</span>
         <h1>Run your business on the <span>modules you actually need.</span></h1>
         <p>CompePharma is a modular CRM &amp; HR platform. Turn on CRM, HR, Recruiting, or the Document Center independently — and only pay for what you use.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -236,16 +281,46 @@ function renderLanding(){
           <button class="btn btn-ghost btn-lg" onclick="document.getElementById('modstore').scrollIntoView({behavior:'smooth'})">See modules</button>
         </div>
       </div>
-      <div class="hero-card">
+      <div class="hero-card"><h4>Modules</h4>
         ${mods.map(m=>`<div class="row"><span class="i">${m.icon}</span>${esc(m.name)}<span style="margin-left:auto;color:var(--muted);font-weight:600">$${m.price}/mo</span></div>`).join("")}
       </div>
     </div>
     <div id="modstore">
-      <h2 style="font-size:26px;letter-spacing:-.5px;margin:10px 0 4px">Pick your modules</h2>
+      <div class="sec-h"><span>Pick your modules</span></div>
       <p style="color:var(--muted);margin:0 0 20px">Each one works on its own. Add more any time.</p>
       <div class="mods">${mods.map(m=>modCard(m,false)).join("")}</div>
     </div>
-  </div>`;
+    <div style="margin-top:40px">${dailyBox("")}</div>
+  </div>
+  ${siteFooter()}`;
+}
+
+/* ---------- CompePharma Daily (same list as compepharma.com/newsletter) ---------- */
+function dailyBox(email){
+  return `<section class="daily"><div><div class="k">Daily email</div><h3>CompePharma Daily</h3>
+    <p>Earnings analysis, deals, launches, pricing and manufacturing news, every weekday morning. Free.</p></div>
+    <form onsubmit="return subscribeDaily(event,this)">
+      <input type="email" name="email" required placeholder="Work email" aria-label="Work email" value="${esc(email||'')}">
+      <button class="btn btn-primary" type="submit">Subscribe</button>
+    </form></section>`;
+}
+async function subscribeDaily(e,form){
+  e.preventDefault();
+  const email=form.email.value.trim(), btn=form.querySelector("button");
+  btn.disabled=true;
+  const {ok,data}=await api("/api/newsletter",{method:"POST",body:JSON.stringify({email,src:ME&&ME.authenticated?"app-dashboard":"app-landing"})});
+  if(ok){try{localStorage.setItem('cpDaily',email)}catch(_){}form.outerHTML=`<div class="done">✓ You're in. CompePharma Daily goes to ${esc(email)} every weekday morning.</div>`;}
+  else{btn.disabled=false;toast((data&&data.error)||"That didn't work. Check the address and try again.");}
+  return false;
+}
+function dailySubscribed(){try{return !!localStorage.getItem('cpDaily')}catch(_){return false}}
+function siteFooter(){
+  return `<footer><div class="wrap"><div class="fg"><div><div class="logo">Compe<b style="color:#2dd4bf">Pharma</b></div>
+    <p style="margin-top:10px;max-width:420px">The business of pharma: daily news and analysis, plus a modular CRM &amp; HR platform for pharma teams.</p></div>
+    <div><h4>News</h4><ul><li><a href="/">Home</a></li><li><a href="/insights">Insights</a></li><li><a href="/news/deals">Deals</a></li><li><a href="/news/earnings">Earnings</a></li></ul></div>
+    <div><h4>Daily email</h4><ul><li><a href="/newsletter">CompePharma Daily</a></li><li><a href="https://vigi-eye.com/newsletter?utm_source=compepharma">VigiEye daily</a></li></ul></div>
+    <div><h4>Company</h4><ul><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li></ul></div></div>
+    <div class="fine">© ${new Date().getFullYear()} CompePharma.</div></div></footer>`;
 }
 function modCard(m, owned){
   return `<div class="mod ${owned?'owned':''}">
@@ -275,6 +350,8 @@ function renderShell(){
       ${navLocked?`<div class="grp">Available</div>${navLocked}`:''}
       <div class="grp">Account</div>
       ${navItem("store","🧩","Add modules",false)}
+      <a class="nav-item" href="/newsletter"><span class="ico">✉️</span>Daily email</a>
+      <a class="nav-item" href="/"><span class="ico">📰</span>CompePharma news</a>
     </aside>
     <main id="main"></main>
   </div>`;
@@ -314,6 +391,7 @@ async function renderDashboard(){
     <div class="page-h"><div><h1>Welcome${ME.name?', '+esc(ME.name.split(' ')[0]):''} 👋</h1>
       <p>${owned.length?owned.length+' module'+(owned.length>1?'s':'')+' active':'No modules yet — activate one to get started.'}</p></div>
       <button class="btn btn-primary" onclick="go('store')">＋ Add modules</button></div>
+    ${dailySubscribed()?'':dailyBox(ME.email)}
     ${cards||`<div class="lockbox"><div class="ic">🧩</div><h2>No modules active</h2>
       <p>Activate CRM, HR, Recruiting, or the Document Center to begin.</p>
       <button class="btn btn-primary btn-lg" onclick="go('store')">Browse modules</button></div>`}`;
@@ -326,8 +404,8 @@ function renderStore(){
   $("#main").innerHTML=`
     <div class="page-h"><div><h1>Modules</h1><p>Activate only what you need. Turn more on any time.</p></div></div>
     ${ME.suite?'':`<div class="bundle"><div><h3>🚀 Full Suite</h3><p>Every module — CRM, HR, Recruiting &amp; Documents — in one plan.</p></div>
-      <div style="text-align:right"><div class="price">$${ME.suite_price}<small style="font-size:13px;color:#bfe0d9">/mo</small></div>
-      <button class="btn" style="background:#fff;color:var(--brand-700);margin-top:8px" onclick="activate('suite')">Get the Suite</button></div></div>`}
+      <div style="text-align:right"><div class="price">$${ME.suite_price}<small style="font-size:13px;color:#c3cede">/mo</small></div>
+      <button class="btn" style="background:#fff;color:var(--navy);margin-top:8px" onclick="activate('suite')">Get the Suite</button></div></div>`}
     <div class="mods">${mods.map(m=>modCard(m,owned.has(m.key))).join("")}</div>`;
 }
 

@@ -467,7 +467,7 @@ def _page(title: str, desc: str, path: str, body: str, canonical: str | None = N
 <meta property="og:description" content="{_e(desc)}"><meta property="og:url" content="{_e(can)}"><meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0a1730">{FONTS}<style>{CSS}</style>{lds}</head><body>
 <div class="util"><div class="wrap"><span class="d">{_e(date.today().strftime("%A %d %B %Y"))}</span>
-<span><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
+<span><a href="/newsletter">Daily email</a><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
 {_mast()}{body}
 <footer><div class="wrap"><div class="fg"><div><div class="logo">Compe<b style="color:#2dd4bf">Pharma</b></div>
 <p style="margin-top:10px;max-width:420px">Pharma business news written by CompePharma's editorial system from company filings with the SEC and
@@ -475,7 +475,7 @@ official FDA, EMA and European Commission records. Not investment advice.</p></d
 <div><h4>Sections</h4><ul>{beats_li}</ul></div>
 <div><h4>Regulatory</h4><ul><li><a href="{VIGIEYE}/">VigiEye news</a></li><li><a href="{VIGIEYE}/pdufa">PDUFA calendar</a></li>
 <li><a href="{VIGIEYE}/approvals">Approvals</a></li><li><a href="{VIGIEYE}/safety">Safety</a></li><li><a href="{VIGIEYE}/newsletter">Daily email</a></li></ul></div>
-<div><h4>Company</h4><ul><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
+<div><h4>Company</h4><ul><li><a href="/newsletter">Daily email</a></li><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
 <div class="fine">© {date.today().year} CompePharma. Every story is original reporting by CompePharma; outbound links go only to official
 sources (regulators and SEC filings).</div></div></footer></body></html>""")
 
@@ -854,14 +854,34 @@ async def newsletter_subscribe(request: Request):
     from fastapi.responses import RedirectResponse
     form = await request.form()
     email = (form.get("email") or "").strip()
-    ok = "0"
+    ok = "1" if _subscribe(email, form.get("src") or "site") else "0"
+    return RedirectResponse(f"/newsletter?ok={ok}", status_code=303)
+
+
+def _subscribe(email: str, src: str) -> bool:
+    """Add an address to CompePharma Daily (the list lives on VigiEye, which sends it)."""
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email or ""):
+        return False
     try:
         import httpx
-        r = httpx.post(VIGIEYE + "/cp/subscribe", json={"email": email, "source": f"cp:{form.get('src') or 'site'}"[:60]}, timeout=20)
-        ok = "1" if r.status_code == 200 else "0"
+        r = httpx.post(VIGIEYE + "/cp/subscribe", json={"email": email, "source": f"cp:{src}"[:60]}, timeout=20)
+        return r.status_code == 200
     except Exception:
-        pass
-    return RedirectResponse(f"/newsletter?ok={ok}", status_code=303)
+        return False
+
+
+@router.post("/api/newsletter", include_in_schema=False)
+async def newsletter_api(request: Request):
+    """JSON sign-up used by the CRM & HR app (/app)."""
+    from fastapi.responses import JSONResponse
+    try:
+        j = await request.json()
+    except Exception:
+        j = {}
+    email = str(j.get("email") or "").strip()
+    if _subscribe(email, str(j.get("src") or "app")):
+        return {"ok": True}
+    return JSONResponse({"ok": False, "error": "That didn't work. Check the address and try again."}, status_code=400)
 
 
 @router.get("/thumb/{beat}/{seed}.svg", include_in_schema=False)
