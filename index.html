@@ -7,13 +7,13 @@
 <meta name="description" content="A modular CRM + HR platform. Activate only the modules you need — CRM, HR, Recruiting, and Document Center.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,800&display=swap" rel="stylesheet">
-<meta name="theme-color" content="#0a1730">
+<meta name="theme-color" content="#000000">
 <style>
   /* Same tokens as the CompePharma news site (portal.py) so the app reads as one brand. */
   :root{
     --ink:#0d1321;--ink-2:#3a4456;--muted:#5d6677;--line:#e3e6eb;
-    --paper:#fff;--soft:#f3f5f8;--navy:#0a1730;--red:#d7263d;
-    --brand:#0e9c8a;--brand-700:#0b7c6e;--brand-050:#e6f6f3;
+    --paper:#fff;--soft:#f3f5f8;--navy:#000;--red:#e4322b;
+    --brand:#e4322b;--brand-700:#c2271f;--brand-050:#fdecea;
     --accent:#1f6feb;--danger:#d7263d;--gold:#f5a623;--green:#0f9d58;
     --radius:6px;--shadow:none;--shadow-lg:0 14px 44px rgba(10,23,48,.22);
     --font:Inter,system-ui,"Segoe UI",Roboto,sans-serif;
@@ -21,17 +21,17 @@
   }
   @media (prefers-color-scheme: dark){:root:not([data-theme=light]){
     --ink:#e7eaf0;--ink-2:#c3cbd8;--muted:#9aa4b5;--line:#1f2a3a;--paper:#0a0f18;--soft:#0f1622;
-    --brand-050:#0f2a27;--brand-700:#2dd4bf}}
+    --brand-050:#3a0f16;--brand-700:#ff6b63}}
   *{box-sizing:border-box}
   html,body{margin:0}
   body{font:16px/1.55 var(--font);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
-  h1,h2,h3{font-family:var(--serif);font-weight:800;letter-spacing:-.01em}
+  h1,h2,h3{font-family:var(--font);font-weight:800;letter-spacing:-.02em}
   .wrap{max-width:1480px;margin:0 auto;padding:0 32px}@media(max-width:700px){.wrap{padding:0 16px}}
 
   /* buttons: square, heavy, red like the news site */
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;font-family:inherit;
-    font-weight:800;font-size:13.5px;letter-spacing:.02em;border-radius:4px;padding:11px 18px;transition:.15s;line-height:1}
+    font-weight:800;font-size:13.5px;letter-spacing:.02em;border-radius:2px;padding:11px 18px;transition:.15s;line-height:1}
   .btn:hover{filter:brightness(1.08)}
   .btn-primary{background:var(--red);color:#fff}
   .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}.btn-ghost:hover{background:var(--soft)}
@@ -42,21 +42,21 @@
   input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);background:var(--paper)}
 
   /* ---------- utility bar + masthead (mirrors the news site) ---------- */
-  .util{background:var(--navy);color:#aab6cc;font-size:12.5px}
+  .util{background:#000;border-bottom:1px solid #222;color:#9a9a9a;font-size:12.5px}
   .util .wrap{display:flex;justify-content:space-between;align-items:center;height:34px;gap:12px}
   .util a{color:#e5ebf5;font-weight:600;margin-left:18px}.util a:hover{color:#fff}.util a.on{color:#fff;box-shadow:inset 0 -2px 0 var(--red)}
   @media(max-width:700px){.util .d,.util .vx{display:none}.util .wrap{justify-content:flex-end}.util a{margin-left:12px;white-space:nowrap}}
-  header{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+  header{background:#000;position:sticky;top:0;z-index:30}
+  header .btn-ghost{color:#fff;border-color:#fff}header .btn-ghost:hover{background:#1a1a1a}
   header .wrap{display:flex;align-items:center;gap:16px;height:72px}
   .logo{display:inline-block;white-space:nowrap;font:900 32px/1 var(--font);letter-spacing:-.045em}
-  .logo b{color:var(--brand)}
-  .logo .prod{font:800 11.5px/1 var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--paper);background:var(--navy);padding:5px 8px;border-radius:3px;position:relative;top:-6px;margin-left:12px;letter-spacing:.1em}
-  @media (prefers-color-scheme: dark){:root:not([data-theme=light]) .logo .prod{background:var(--red);color:#fff}}
-  @media(max-width:600px){.logo{font-size:25px}.logo .prod{display:none}}
+  .logo{color:#fff}.logo b{color:var(--red)}
+  .logo .prod{font:800 11.5px/1 var(--font);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--red);padding:5px 8px;border-radius:3px;position:relative;top:-6px;margin-left:12px;letter-spacing:.1em}
+    @media(max-width:600px){.logo{font-size:25px}.logo .prod{display:none}}
   .spacer{flex:1}
   #topauth{display:flex;gap:8px;align-items:center}
   .acct{position:relative}
-  .avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--red);color:#fff;
     display:grid;place-items:center;font-weight:800;cursor:pointer}
   .menu{position:absolute;right:0;top:46px;background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:4px;
     box-shadow:var(--shadow-lg);min-width:220px;padding:8px;display:none}
@@ -76,6 +76,7 @@
   main{padding:28px 34px;max-width:1240px}
   .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:16px}
   .page-h h1{font:900 34px/1.05 var(--font);letter-spacing:-.03em;margin:0}
+  .page-h p,.hero p,.mod .tl{font-family:var(--serif)}
   .page-h p{margin:6px 0 0;color:var(--muted);font-size:15px}
 
   /* ---------- cards / stats ---------- */
@@ -87,7 +88,7 @@
   .panel-h{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--line)}
   .panel-h h3{margin:0;font:900 13px/1.2 var(--font);letter-spacing:.1em;text-transform:uppercase}
   .panel-b{padding:6px 0}
-  .subtabs{display:flex;gap:2px;margin-bottom:18px;flex-wrap:wrap;background:var(--navy);padding:0 6px}
+  .subtabs{display:flex;gap:2px;margin-bottom:18px;flex-wrap:wrap;background:#000;padding:0 6px}
   .subtab{border:0;border-bottom:3px solid transparent;background:transparent;padding:13px 14px 11px;font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#dfe6f2;cursor:pointer;font-family:inherit}
   .subtab:hover{color:#fff;background:rgba(255,255,255,.06)}
   .subtab.active{color:#fff;border-bottom-color:var(--red)}
@@ -117,8 +118,8 @@
   .mod{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:0;padding:20px;display:flex;flex-direction:column}
   .mod.owned{border-top-color:var(--brand)}
   .mod .ic{font-size:30px}
-  .mod h3{margin:10px 0 4px;font-size:22px}
-  .mod .tl{color:var(--muted);font-size:14.5px;margin:0 0 12px}
+  .mod h3{margin:10px 0 4px;font-size:21px;font-weight:800}
+  .mod .tl{color:var(--muted);font-size:15.5px;margin:0 0 12px}
   .mod ul{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:7px}
   .mod li{font-size:14px;color:var(--ink-2);display:flex;gap:8px}
   .mod li .ck{color:var(--brand);font-weight:900}
@@ -126,30 +127,30 @@
   .mod .price small{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:0}
   .mod .btn{margin-top:auto}
   .owned-tag{display:inline-flex;align-items:center;gap:6px;color:var(--brand);font-weight:900;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
-  .bundle{background:var(--navy);color:#fff;border-radius:0;border-top:4px solid var(--red);padding:24px;display:flex;
+  .bundle{background:#000;color:#fff;border-radius:0;border-top:4px solid var(--red);padding:24px;display:flex;
     align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px}
   .bundle h3{margin:0 0 4px;font-size:24px;color:#fff}.bundle p{margin:0;color:#c3cede;font-size:14.5px}
   .bundle .price{font:900 30px/1 var(--font);letter-spacing:-.03em}
 
   /* ---------- daily email ---------- */
-  .daily{background:var(--navy);color:#e5ebf5;border-top:4px solid var(--brand);padding:22px 24px;display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 22px}
-  .daily .k{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#5eead4}
+  .daily{background:#000;color:#e5ebf5;border-top:4px solid var(--red);padding:22px 24px;display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 22px}
+  .daily .k{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
   .daily h3{color:#fff;margin:6px 0 4px;font-size:24px}.daily p{margin:0;color:#c3cede;font-size:14.5px;max-width:56ch}
   .daily form{display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:260px;max-width:440px}
-  .daily input{flex:1;min-width:180px;height:42px;padding:0 12px;border:1px solid #23314a;border-radius:4px;background:#0f1d38;color:#fff}
+  .daily input{flex:1;min-width:180px;height:42px;padding:0 12px;border:1px solid #333;border-radius:2px;background:#111;color:#fff}
   .daily input::placeholder{color:#8a97ad}
-  .daily .done{font-weight:800;color:#5eead4}
+  .daily .done{font-weight:800;color:#fff}
 
   /* ---------- landing ---------- */
   .land{max-width:1180px;margin:0 auto;padding:30px 32px 10px}
   .kicker{display:inline-block;font-weight:800;font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--red);border-left:3px solid var(--red);padding-left:7px;line-height:1.1}
   .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:24px 0 46px;border-bottom:1px solid var(--line);margin-bottom:34px}
-  .hero h1{font:800 50px/1.06 var(--serif);letter-spacing:-.015em;margin:14px 0 16px}
-  .hero h1 span{color:var(--brand)}
+  .hero h1{font:900 52px/1.04 var(--font);letter-spacing:-.035em;margin:14px 0 16px}
+  .hero h1 span{color:var(--red)}
   .hero p{font:19px/1.55 var(--serif);color:var(--ink-2);margin:0 0 24px;max-width:44ch}
   .hero-card{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);padding:6px 20px 10px}
   .hero-card h4{margin:12px 0 4px;font:900 13px/1 var(--font);letter-spacing:.1em;text-transform:uppercase}
-  .hero-card .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);font:700 16px/1.3 var(--serif)}
+  .hero-card .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);font:700 15.5px/1.3 var(--font)}
   .hero-card .row:first-of-type{border-top:0}
   .hero-card .row .i{width:34px;height:34px;border-radius:3px;background:var(--soft);display:grid;place-items:center;font-size:18px}
   .sec-h{display:flex;align-items:baseline;justify-content:space-between;border-top:4px solid var(--ink);padding-top:10px;margin:0 0 6px}
@@ -159,7 +160,7 @@
   footer .fg{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:30px}@media(max-width:800px){footer .fg{grid-template-columns:1fr 1fr}}
   footer h4{color:#fff;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 10px;font-family:var(--font);font-weight:900}
   footer ul{margin:0;padding:0}footer li{list-style:none;margin:6px 0}
-  footer a:hover{color:#fff}footer .logo{font-size:30px;color:#fff}footer .fine{border-top:1px solid #1b2840;margin-top:28px;padding-top:16px;font-size:12.5px}
+  footer a:hover{color:#fff}footer .logo{font-size:30px;color:#fff}footer .fine{border-top:1px solid #222;margin-top:28px;padding-top:16px;font-size:12.5px}
 
   .overlay{position:fixed;inset:0;background:rgba(10,23,48,.6);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:44px 16px;overflow:auto}
   .overlay.open{display:flex}
@@ -183,7 +184,7 @@
   .field input:focus,.addbar input:focus,.addbar select:focus{outline:none;border-color:var(--ink)}
   .err{background:#fdecea;color:#c0392b;border-radius:4px;padding:9px 12px;font-size:13.5px;margin-bottom:12px;display:none}
   .err.show{display:block}
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;border-left:4px solid var(--red);padding:12px 18px;border-radius:3px;font-size:14px;box-shadow:var(--shadow-lg);z-index:80;display:none}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#000;color:#fff;border-left:4px solid var(--red);padding:12px 18px;border-radius:3px;font-size:14px;box-shadow:var(--shadow-lg);z-index:80;display:none}
   .toast.show{display:block}
   .lockbox{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);padding:40px;text-align:center}
   .lockbox .ic{font-size:40px}
@@ -315,7 +316,7 @@ async function subscribeDaily(e,form){
 }
 function dailySubscribed(){try{return !!localStorage.getItem('cpDaily')}catch(_){return false}}
 function siteFooter(){
-  return `<footer><div class="wrap"><div class="fg"><div><div class="logo">Compe<b style="color:#2dd4bf">Pharma</b></div>
+  return `<footer><div class="wrap"><div class="fg"><div><div class="logo">Compe<b>Pharma</b></div>
     <p style="margin-top:10px;max-width:420px">The business of pharma: daily news and analysis, plus a modular CRM &amp; HR platform for pharma teams.</p></div>
     <div><h4>News</h4><ul><li><a href="/">Home</a></li><li><a href="/insights">Insights</a></li><li><a href="/news/deals">Deals</a></li><li><a href="/news/earnings">Earnings</a></li></ul></div>
     <div><h4>Daily email</h4><ul><li><a href="/newsletter">CompePharma Daily</a></li><li><a href="https://vigi-eye.com/newsletter?utm_source=compepharma">VigiEye daily</a></li></ul></div>
