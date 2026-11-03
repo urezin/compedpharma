@@ -381,6 +381,35 @@ def app_ui():
     return FileResponse(os.path.join(_STATIC, "index.html"))
 
 
+# ---------- favicon / app icons ----------
+_ICONS = {
+    "favicon.ico": "image/x-icon", "favicon.svg": "image/svg+xml", "favicon-32.png": "image/png",
+    "apple-touch-icon.png": "image/png", "icon-192.png": "image/png", "icon-512.png": "image/png",
+}
+
+
+def _icon_route(name: str, mime: str):
+    path = os.path.join(_STATIC, "static", name)
+
+    def _serve():
+        return FileResponse(path, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
+    return _serve
+
+
+for _n, _m in _ICONS.items():
+    app.add_api_route(f"/{_n}", _icon_route(_n, _m), methods=["GET"], include_in_schema=False)
+
+
+@app.get("/site.webmanifest", include_in_schema=False)
+def webmanifest():
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"name": "CompePharma", "short_name": "CompePharma", "theme_color": "#000000",
+                         "background_color": "#000000", "display": "standalone", "start_url": "/",
+                         "icons": [{"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+                                   {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}]},
+                        media_type="application/manifest+json")
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "app": APP_NAME, "billing": BILLING}

@@ -465,7 +465,7 @@ def _page(title: str, desc: str, path: str, body: str, canonical: str | None = N
 <title>{_e(title)}</title><meta name="description" content="{_e(desc)}"><link rel="canonical" href="{_e(can)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="CompePharma"><meta property="og:title" content="{_e(title)}">
 <meta property="og:description" content="{_e(desc)}"><meta property="og:url" content="{_e(can)}"><meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#0a1730">{FONTS}<style>{CSS}</style>{lds}</head><body>
+<meta name="theme-color" content="#000000"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">{FONTS}<style>{CSS}</style>{lds}</head><body>
 <div class="util"><div class="wrap"><span class="d">{_e(date.today().strftime("%A %d %B %Y"))}</span>
 <span><a href="/newsletter">Daily email</a><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
 {_mast()}{body}
