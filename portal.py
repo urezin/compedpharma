@@ -701,7 +701,7 @@ def _story_data(it: dict) -> dict:
     if hit and time.time() - hit[0] < 1800:
         return hit[1]
     try:
-        d = _get(f"/api/story/{k}/{nid}", timeout=15)
+        d = _get(f"/api/story/{k}/{nid}?edition=cp", timeout=15)
     except Exception:
         d = hit[1] if hit else {}
     _STORY[sid] = (time.time(), d)
@@ -746,9 +746,11 @@ AI-assisted; check the source before acting. Not investment advice.</p>
            "description": (dek or (body_p[0] if body_p else ""))[:300], "isBasedOn": src,
            "image": [f"{BASE}/thumb/{it.get('beat', 'industry')}/{hashlib.sha1(it['id'].encode()).hexdigest()[:10]}.svg"],
            "publisher": {"@type": "Organization", "name": "CompePharma", "url": BASE + "/"}}]
-    # the article also lives on VigiEye; point search engines at one copy
+    # CompePharma's own business write-up is an original article and canonical to itself; until it exists the
+    # page shows VigiEye's text, so it points search engines at VigiEye's copy to avoid a duplicate.
+    own = st.get("edition") == "cp"
     return _page(f"{title[:90]} | CompePharma", (dek or title)[:155], f"/story/{sid}", body,
-                 canonical=it.get("vigieye_url") or None, ld=ld)
+                 canonical=None if own else (it.get("vigieye_url") or None), ld=ld)
 
 
 _GLYPH = {
@@ -992,7 +994,10 @@ def news_sitemap():
     from datetime import timedelta
     since = (date.today() - timedelta(days=2)).isoformat()
     arts = [a for a in (_load().get("insights") or []) if (a.get("date") or "") >= since]
-    body = "".join(f"<url><loc>{_e(BASE)}/insights/{_e(a['slug'])}</loc><news:news><news:publication><news:name>CompePharma</news:name>"
+    stories = [i for i in (_load().get("items") or []) if i.get("cp_story") and (i.get("date") or "") >= since]
+    body = "".join(f"<url><loc>{_e(BASE)}/story/{_e(_sid(i))}</loc><news:news><news:publication><news:name>CompePharma</news:name>"
+                   f"<news:language>en</news:language></news:publication><news:publication_date>{_e(i.get('date'))}</news:publication_date>"
+                   f"<news:title>{_e(i['title'])}</news:title></news:news></url>" for i in stories) + "".join(f"<url><loc>{_e(BASE)}/insights/{_e(a['slug'])}</loc><news:news><news:publication><news:name>CompePharma</news:name>"
                    f"<news:language>en</news:language></news:publication><news:publication_date>{_e(a.get('date'))}</news:publication_date>"
                    f"<news:title>{_e(a['title'])}</news:title></news:news></url>" for a in arts)
     return Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
@@ -1003,7 +1008,8 @@ def news_sitemap():
 def sitemap():
     today = date.today().isoformat()
     urls = ["/", "/insights", "/newsletter", "/enterprise", "/market-analysis", "/market-analysis/top-100-drugs"] + [f"/news/{k}" for k, _, _ in BEATS] + \
-           [f"/insights/{a['slug']}" for a in (_load().get("insights") or [])[:200]]
+           [f"/insights/{a['slug']}" for a in (_load().get("insights") or [])[:200]] + \
+           [f"/story/{_sid(i)}" for i in (_load().get("items") or []) if i.get("cp_story")]
     body = "".join(f"<url><loc>{_e(BASE + u)}</loc><lastmod>{today}</lastmod><changefreq>hourly</changefreq></url>" for u in urls)
     return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>',
                     media_type="application/xml")
