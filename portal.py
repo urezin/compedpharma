@@ -685,7 +685,7 @@ def beat_page(beat: str, page: int = 1):
     body = f"""{_beatbar(beat)}{_ticker(c)}<div class="shead" style="--c:{BEAT_COLOR[beat]}"><div class="wrap"><h1>{_e(BEAT_LABEL[beat])}</h1>
 <p>{_e(BEAT_BLURB[beat])}</p></div></div><main class="wrap">
 <div class="cols" style="margin-top:28px"><div>{lead_html}{"".join(river(i) for i in shown) or '<p class="note">No stories in this section right now.</p>'}{pager}</div>{_side(c, beat)}</div></main>"""
-    return _page(f"{BEAT_LABEL[beat]}: pharma industry news | CompePharma", BEAT_BLURB[beat], f"/news/{beat}", body)
+    return _page(f"{BEAT_LABEL[beat]}: pharma industry news | CompePharma", BEAT_BLURB[beat], f"/news/{beat}" + (f"?page={page}" if page > 1 else ""), body)
 
 
 _STORY: dict = {}
