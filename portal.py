@@ -389,15 +389,14 @@ def _ad_box(place: str) -> str:
             f'<p style="font-weight:700;margin-top:6px">Regulatory, quality and pharmacovigilance consulting for the pharmaceutical industry</p>'
             f'<ul><li>Regulatory affairs &amp; market access</li><li>Quality management &amp; audit readiness</li>'
             f'<li>Pharmacovigilance &amp; medical information</li></ul>'
-            f'<p class="by">25+ years with EOF and EMA · human and veterinary medicines</p>'
             f'<p style="margin-top:12px"><a class="btn teal" href="{_e(u)}" target="_blank" rel="noopener sponsored">Visit pqra.gr →</a></p></aside>')
 
 
 def _ad_banner(place: str) -> str:
     u = f'{PQRA["cta_url"]}?utm_source=compepharma&utm_medium=house_ad&utm_campaign=pqra&utm_content={place}'
     return (f'<div class="wrap" style="margin-top:46px"><aside class="box ad banner" aria-label="Advertisement"><span class="adt">Advertisement</span>'
-            f'<div><div class="al">PQRA</div><p style="font-weight:700;font-size:18px;margin-top:4px">Regulatory, quality and pharmacovigilance support, '
-            f'backed by 25+ years with EOF and EMA.</p><p class="by">Marketing authorisations · QMS &amp; GMP/GDP audit readiness · local PV &amp; medical information</p></div>'
+            f'<div><div class="al">PQRA</div><p style="font-weight:700;font-size:18px;margin-top:4px">Regulatory, quality and pharmacovigilance support.</p>'
+            f'<p class="by">Marketing authorisations · QMS &amp; GMP/GDP audit readiness · local PV &amp; medical information</p></div>'
             f'<a class="btn teal" href="{_e(u)}" target="_blank" rel="noopener sponsored">Visit pqra.gr →</a></aside></div>')
 
 
