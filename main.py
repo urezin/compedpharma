@@ -337,6 +337,9 @@ def _set_cookie(resp, acc: Account):
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(title=APP_NAME)
+from adsense import AdSenseMiddleware
+# Google AdSense on the news portal only (never inside the CRM/HR app, admin or APIs); serves /ads.txt
+app.add_middleware(AdSenseMiddleware, exclude=("/app", "/api", "/admin", "/login", "/account"))
 _STATIC = os.path.dirname(__file__)
 
 
