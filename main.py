@@ -373,6 +373,15 @@ def _startup():
 # Public news portal (the business of pharma) is the homepage; the CRM/HR app lives at /app.
 import portal as _portal  # noqa: E402
 app.include_router(_portal.router)
+import legal as _legal  # noqa: E402
+app.include_router(_legal.make_router(
+    {"name": "CompePharma", "domain": "compepharma.com",
+     "what": "CompePharma is a daily news and analysis service on the business of pharma: deals and M&A, financing, "
+             "approvals and launches, manufacturing and supply, pricing policy, legal disputes and quarterly earnings.",
+     "audience": "business development, commercial, finance, market-access and strategy professionals in pharma and biotech",
+     "sister": ("VigiEye", "https://vigi-eye.com/"), "sister_scope": "regulatory side: approvals, pharmacovigilance, quality, guidelines and the PDUFA calendar",
+     "accounts": True, "payments": True},
+    lambda t, d, p, b: _portal._page(f"{t} | CompePharma" if "CompePharma" not in t else t, d, p, b)))
 import business as _business  # noqa: E402  (enterprise page + market-analysis service)
 app.include_router(_business.router)
 import report_top100 as _report_top100  # noqa: E402  (top-100 drugs 5-year outlook report)
