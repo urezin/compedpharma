@@ -375,7 +375,7 @@ import portal as _portal  # noqa: E402
 app.include_router(_portal.router)
 import legal as _legal  # noqa: E402
 import gate as _gate_mod  # noqa: E402
-app.include_router(_gate_mod.router)   # free reader sign-up for full articles
+app.include_router(_gate_mod.router)   # reader paywall ($4.99/month, accounts live on VigiEye)
 app.include_router(_legal.make_router(
     {"name": "CompePharma", "domain": "compepharma.com",
      "what": "CompePharma is a daily news and analysis service on the business of pharma: deals and M&A, financing, "
