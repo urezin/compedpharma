@@ -456,7 +456,7 @@ def _ticker(c: dict) -> str:
 def _mast() -> str:
     return (f'<header class="mast"><div class="wrap"><div class="ml"><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
             f'<div class="tag">The business of pharma</div></div>'
-            f'<div class="cta"><a class="btn" href="/newsletter">Subscribe free</a></div></div></header>')
+            f'<div class="cta"><a class="btn" href="/reader/login">Sign in</a></div></div></header>')
 
 
 def _page(title: str, desc: str, path: str, body: str, canonical: str | None = None, ld: list | None = None) -> HTMLResponse:
@@ -469,7 +469,7 @@ def _page(title: str, desc: str, path: str, body: str, canonical: str | None = N
 <meta property="og:description" content="{_e(desc)}"><meta property="og:url" content="{_e(can)}"><meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#000000"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">{FONTS}<style>{CSS}</style>{lds}</head><body>
 <div class="util"><div class="wrap"><span class="d">{_e(date.today().strftime("%A %d %B %Y"))}</span>
-<span><a href="/newsletter">Daily email</a><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
+<span><a href="/reader/login">Sign in / Subscribe</a><a href="/newsletter">Free daily email</a><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
 {_mast()}{body}
 <footer><div class="wrap"><div class="fg"><div><div class="logo">Compe<b style="color:#2dd4bf">Pharma</b></div>
 <p style="margin-top:10px;max-width:420px">Pharma business news written by CompePharma's editorial system from company filings with the SEC and

@@ -102,9 +102,10 @@ _BENEFITS = ("<ul><li>Every article, analysis and opinion piece on CompePharma a
              "<li>One subscription for both sites, cancel any time</li></ul>")
 
 
-def signup_box(return_url: str, source: str = "article") -> str:
-    return f"""<style>{_CSS}</style><div class="rg"><div class="fade"></div><div class="card">
-<h3>Subscribe to keep reading</h3><p><span class="price">{_e(PRICE_LABEL)}</span> / month</p>{_BENEFITS}
+def signup_box(return_url: str, source: str = "article", heading: str = "Subscribe to keep reading", fade: bool = True) -> str:
+    return f"""<style>{_CSS}</style><div class="rg">{'<div class="fade"></div>' if fade else ''}<div class="card">
+<h3>{_e(heading)}</h3><p><span class="price">{_e(PRICE_LABEL)}</span> / month</p>{_BENEFITS}
+<p class="fine" style="margin:-4px 0 10px">Already a subscriber? Enter your email below: we'll send you a sign-in link. No password needed.</p>
 <form onsubmit="return rgSignup(this)" data-src="{_e(source)}" data-ret="{_e(return_url)}">
 <input type="email" name="email" placeholder="Your email" required autocomplete="email">
 <label class="ck"><input type="checkbox" name="newsletter" value="1"> Also send me the free daily CompePharma email (unsubscribe any time)</label>
@@ -218,6 +219,38 @@ def reader_confirm(request: Request, t: str = ""):
     ret = _safe_return(j.get("return"))
     dest = ret if j.get("paid") else _subscribe_url(j.get("link") or "", ret)
     return _cookie(RedirectResponse(dest, status_code=303), request, j["access"])
+
+
+HOW_IT_WORKS = ('<ol style="font-size:15px;line-height:1.6;padding-left:20px"><li>Enter your email and press <b>Continue</b>.</li>'
+                '<li>Open the email we send you and click <b>Confirm and continue</b>. That signs you in on this device for a year; there is no password.</li>'
+                '<li>Subscribers go straight back to reading. Everyone else is taken to secure checkout (Stripe, '
+                + PRICE_LABEL + ' a month, cancel any time).</li><li>On a new phone or computer, do the same once more with the same email.</li></ol>')
+
+
+@router.get("/reader/login", include_in_schema=False)
+def reader_login(request: Request):
+    import portal as _portal
+    info = _access(request.cookies.get(COOKIE) or "", fresh=True)
+    if info.get("email"):
+        btns = []
+        if not info.get("paid") and info.get("link"):
+            btns.append(f'<a class="rg-btn" href="{_e(_subscribe_url(info["link"], _base() + "/"))}">Subscribe for {_e(PRICE_LABEL)} / month</a>')
+        if info.get("paid"):
+            btns.append('<a class="rg-btn" style="background:#334155!important" href="/reader/manage">Manage or cancel subscription</a>')
+        btns.append('<a class="rg-btn" style="background:#64748b!important" href="/reader/signout">Sign out</a>')
+        status = "Full access to every article" if info.get("paid") else "Not subscribed: you can read headlines and the opening of each story"
+        body = (f'<style>{_CSS}</style><div class="rg"><div class="card"><h3>Your account</h3><p>Signed in as <b>{_e(info["email"])}</b></p>'
+                f'<p><b>{_e(status)}</b></p><div style="display:grid;gap:10px">{"".join(btns)}</div>'
+                f'<p class="fine" style="margin-top:12px">One subscription covers CompePharma and VigiEye. On VigiEye, sign in there once with the same email.</p></div></div>')
+        title = "Your account"
+    else:
+        ret = _safe_return(request.query_params.get("return"))
+        body = (f'<p style="font-size:16px">Headlines and the first paragraph of every story are free. Full articles on CompePharma and '
+                f'VigiEye are for subscribers.</p><h2 style="font-size:19px;margin:18px 0 4px">How signing in works</h2>{HOW_IT_WORKS}'
+                + signup_box(ret, "login", heading="Sign in or subscribe", fade=False))
+        title = "Sign in"
+    html = f'<main style="max-width:640px;margin:30px auto;padding:0 16px"><h1 style="font-size:30px">{title}</h1>{body}</main>'
+    return _portal._page("Sign in | CompePharma", "Sign in to CompePharma or subscribe to read every article.", "/reader/login", html)
 
 
 @router.get("/reader/manage", include_in_schema=False)
