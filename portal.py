@@ -22,6 +22,8 @@ import time
 from datetime import date, datetime
 
 from fastapi import APIRouter, HTTPException, Request
+
+import legal as _legal
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 
 router = APIRouter()
@@ -474,9 +476,9 @@ official FDA, EMA and European Commission records. Not investment advice.</p></d
 <div><h4>Sections</h4><ul>{beats_li}</ul></div>
 <div><h4>Regulatory</h4><ul><li><a href="{VIGIEYE}/">VigiEye news</a></li><li><a href="{VIGIEYE}/pdufa">PDUFA calendar</a></li>
 <li><a href="{VIGIEYE}/approvals">Approvals</a></li><li><a href="{VIGIEYE}/safety">Safety</a></li><li><a href="{VIGIEYE}/newsletter">Daily email</a></li></ul></div>
-<div><h4>Company</h4><ul><li><a href="/newsletter">Daily email</a></li><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/about">About us</a></li><li><a href="/contact">Contact</a></li><li><a href="/editorial-policy">Editorial policy</a></li><li><a href="/privacy">Privacy &amp; cookies</a></li><li><a href="/terms">Terms of use</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
+<div><h4>Company</h4><ul><li><a href="/newsletter">Daily email</a></li><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/about">About us</a></li><li><a href="/contact">Contact</a></li><li><a href="/editorial-policy">Editorial policy</a></li><li><a href="/privacy">Privacy &amp; cookies</a></li><li><a href="/terms">Terms of use</a></li><li><a href="/disclaimer">Disclaimer</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
 <div class="fine">© {date.today().year} CompePharma, published by PQRA, Marousi, Athens. Every story is original reporting by CompePharma; outbound links go only to official
-sources (regulators and SEC filings).</div></div></footer></body></html>""")
+sources (regulators and SEC filings).<br>{_legal.FOOTER_NOTE}</div></div></footer></body></html>""")
 
 
 def _score(it: dict) -> float:
@@ -1008,7 +1010,7 @@ def news_sitemap():
 @router.get("/sitemap.xml", include_in_schema=False)
 def sitemap():
     today = date.today().isoformat()
-    urls = ["/", "/insights", "/newsletter", "/enterprise", "/market-analysis", "/market-analysis/top-100-drugs", "/about", "/contact", "/editorial-policy", "/privacy", "/terms"] + [f"/news/{k}" for k, _, _ in BEATS] + \
+    urls = ["/", "/insights", "/newsletter", "/enterprise", "/market-analysis", "/market-analysis/top-100-drugs", "/about", "/contact", "/editorial-policy", "/privacy", "/terms", "/disclaimer"] + [f"/news/{k}" for k, _, _ in BEATS] + \
            [f"/insights/{a['slug']}" for a in (_load().get("insights") or [])[:200]] + \
            [f"/story/{_sid(i)}" for i in (_load().get("items") or []) if i.get("cp_story")]
     body = "".join(f"<url><loc>{_e(BASE + u)}</loc><lastmod>{today}</lastmod><changefreq>hourly</changefreq></url>" for u in urls)
