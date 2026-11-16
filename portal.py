@@ -24,6 +24,7 @@ from datetime import date, datetime
 from fastapi import APIRouter, HTTPException, Request
 
 import legal as _legal
+import gate as _gate
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 
 router = APIRouter()
@@ -713,7 +714,7 @@ def _story_data(it: dict) -> dict:
 
 
 @router.get("/story/{sid}", response_class=HTMLResponse, include_in_schema=False)
-def story(sid: str):
+def story(sid: str, request: Request):
     c = _load()
     it = next((i for i in c["items"] if _sid(i) == sid), None)
     if not it:
@@ -724,9 +725,10 @@ def story(sid: str):
     dek = st.get("dek") or ("" if body_p else it.get("summary") or st.get("summary") or "")
     src = st.get("source_url") or it.get("source_url")      # official sources only (filtered upstream)
     src_label = "Company's press release (SEC filing)" if it["kind"] == "company" else "Official record"
-    paras = "".join(f"<p>{_e(p)}</p>" for p in body_p)
     take = st.get("takeaways") or []
     take_html = (f'<div class="take"><h2>Why it matters</h2><ul>{"".join(f"<li>{_e(t)}</li>" for t in take)}</ul></div>') if take else ""
+    _rest = ('<div class="body">' + "".join(f"<p>{_e(p)}</p>" for p in body_p[1:]) + "</div>" if body_p[1:] else "") + take_html
+    paras_gated = _gate.gated(request, '<div class="body">' + "".join(f"<p>{_e(p)}</p>" for p in body_p[:1]) + "</div>", _rest, source="story")
     rel = [i for i in c["items"] if i.get("beat") == it.get("beat") and i["id"] != it["id"]][:6]
     from urllib.parse import quote
     share = BASE + f"/story/{sid}"
@@ -736,7 +738,7 @@ def story(sid: str):
 <div class="share"><a href="https://www.linkedin.com/sharing/share-offsite/?url={quote(share)}" target="_blank" rel="noopener">Share on LinkedIn</a>
 <a href="mailto:?subject={quote(title)}&body={quote(share)}">Email</a></div>
 <div style="margin:20px 0 26px">{_thumb(it, "wide")}</div>
-<div class="body">{paras}</div>{take_html}
+{paras_gated}
 {f'<p><a class="btn teal" href="{_e(src)}" target="_blank" rel="noopener">{_e(src_label)}: {_e(it.get("publisher"))} ↗</a></p>' if src else ""}
 <p class="note">{"Written by CompePharma's editorial system from the company's filing; claims are the company's." if it["kind"] == "company" else "Written by CompePharma's editorial system from the official record."}
 AI-assisted; check the source before acting. Not investment advice.</p>
@@ -750,6 +752,8 @@ AI-assisted; check the source before acting. Not investment advice.</p>
     # CompePharma's own business write-up is an original article and canonical to itself; until it exists the
     # page shows VigiEye's text, so it points search engines at VigiEye's copy to avoid a duplicate.
     own = st.get("edition") == "cp"
+    if len(body_p) > 1 or take:
+        ld = [_gate.ld(ld[0])]
     return _page(f"{title[:90]} | CompePharma", (dek or title)[:155], f"/story/{sid}", body,
                  canonical=None if own else (it.get("vigieye_url") or None), ld=ld)
 
@@ -799,7 +803,7 @@ def insights(type: str = ""):
 
 
 @router.get("/insights/{slug}", response_class=HTMLResponse, include_in_schema=False)
-def insight(slug: str):
+def insight(slug: str, request: Request):
     if not re.match(r"^[a-z0-9\-]{5,120}$", slug):
         raise HTTPException(404)
     c = _load()
@@ -811,9 +815,13 @@ def insight(slug: str):
     k = a.get("type", "analysis")
     color = "#d7263d" if k == "earnings" else ("#4338ca" if k == "opinion" else BEAT_COLOR.get(a.get("beat"), "#0e9c8a"))
     figs = "".join(f'<div><b>{_e(f.get("value"))}</b><span>{_e(f.get("label"))}</span></div>' for f in a.get("figures") or [])
-    secs = "".join(f'<h2 class="sh">{_e(x.get("heading"))}</h2>' + "".join(f"<p>{_e(p)}</p>" for p in x.get("paragraphs") or [])
-                   for x in a.get("sections") or [])
+    _secs = [f'<h2 class="sh">{_e(x.get("heading"))}</h2>' + "".join(f"<p>{_e(p)}</p>" for p in x.get("paragraphs") or [])
+             for x in a.get("sections") or []]
     take = a.get("takeaways") or []
+    _take_html = ('<div class="take"><h2>' + ("What to watch" if k == "earnings" else "What leaders should do") + "</h2><ul>"
+                  + "".join(f"<li>{_e(t)}</li>" for t in take) + "</ul></div>") if take else ""
+    secs_gated = _gate.gated(request, '<div class="body">' + "".join(_secs[:1]) + "</div>",
+                             ('<div class="body">' + "".join(_secs[1:]) + "</div>" if _secs[1:] else "") + _take_html, source="insight")
     srcs = "".join((f'<li><a href="{_e(x["url"])}" target="_blank" rel="noopener" style="color:var(--brand);font-weight:700">{_e(x.get("title"))}</a>'
                     if x.get("url") else f'<li>{_e(x.get("title"))}') + f' <span class="by">{_e(x.get("publisher"))} · {_e(_fmt(x.get("date", "")))}</span></li>'
                    for x in a.get("sources") or [])
@@ -828,8 +836,7 @@ def insight(slug: str):
 <div class="share"><a href="https://www.linkedin.com/sharing/share-offsite/?url={quote(share)}" target="_blank" rel="noopener">Share on LinkedIn</a>
 <a href="mailto:?subject={quote(a["title"])}&body={quote(share)}">Email</a></div>
 {f'<div class="statp">{figs}</div>' if figs else f'<div style="margin:20px 0 6px">{_ins_thumb(a)}</div>'}
-<div class="body">{secs}</div>
-{f'<div class="take"><h2>{"What to watch" if k == "earnings" else "What leaders should do"}</h2><ul>{"".join(f"<li>{_e(t)}</li>" for t in take)}</ul></div>' if take else ""}
+{secs_gated}
 {f'<h2 class="sh" style="font-size:18px">Sources</h2><ul class="srcs">{srcs}</ul>' if srcs else ""}
 <p class="note">Written by CompePharma's editorial system (AI-assisted, model {_e(a.get("model"))}) strictly from the official material listed.
 {"Earnings analysis is based on the company's results release filed with the SEC, not on the earnings call. " if k == "earnings" else ""}It can contain errors; check the sources. Not investment advice.</p>
@@ -839,6 +846,8 @@ def insight(slug: str):
            "headline": a["title"][:110], "description": a.get("dek", ""), "datePublished": a.get("date"),
            "author": {"@type": "Organization", "name": "CompePharma editorial"},
            "publisher": {"@type": "Organization", "name": "CompePharma", "url": BASE + "/"}}]
+    if len(_secs) > 1 or take:
+        ld = [_gate.ld(ld[0])]
     return _page(f"{a['title'][:90]} | CompePharma {KIND_LABEL.get(k, '')}", (a.get("dek") or a["title"])[:155], f"/insights/{slug}", body, ld=ld)
 
 
