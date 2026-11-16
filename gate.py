@@ -235,10 +235,11 @@ def reader_login(request: Request):
         btns = []
         if not info.get("paid") and info.get("link"):
             btns.append(f'<a class="rg-btn" href="{_e(_subscribe_url(info["link"], _base() + "/"))}">Subscribe for {_e(PRICE_LABEL)} / month</a>')
-        if info.get("paid"):
+        if info.get("has_subscription") and not info.get("complimentary"):
             btns.append('<a class="rg-btn" style="background:#334155!important" href="/reader/manage">Manage or cancel subscription</a>')
         btns.append('<a class="rg-btn" style="background:#64748b!important" href="/reader/signout">Sign out</a>')
-        status = "Full access to every article" if info.get("paid") else "Not subscribed: you can read headlines and the opening of each story"
+        status = ("Full access (site administrator / complimentary)" if info.get("complimentary") else
+                  "Full access to every article") if info.get("paid") else "Not subscribed: you can read headlines and the opening of each story"
         body = (f'<style>{_CSS}</style><div class="rg"><div class="card"><h3>Your account</h3><p>Signed in as <b>{_e(info["email"])}</b></p>'
                 f'<p><b>{_e(status)}</b></p><div style="display:grid;gap:10px">{"".join(btns)}</div>'
                 f'<p class="fine" style="margin-top:12px">One subscription covers CompePharma and VigiEye. On VigiEye, sign in there once with the same email.</p></div></div>')
