@@ -454,7 +454,7 @@ def _ticker(c: dict) -> str:
 
 
 def _mast() -> str:
-    return (f'<header class="mast"><div class="wrap"><div class="ml"><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
+    return (f'<header class="mast"><div class="wrap"><div class="ml"><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise solutions</a></div><div class="mc"><a href="/" class="logo">Compe<b>Pharma</b></a>'
             f'<div class="tag">The business of pharma</div></div>'
             f'<div class="cta"><a class="btn" href="/reader/login">Sign in</a></div></div></header>')
 
@@ -469,7 +469,7 @@ def _page(title: str, desc: str, path: str, body: str, canonical: str | None = N
 <meta property="og:description" content="{_e(desc)}"><meta property="og:url" content="{_e(can)}"><meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#000000"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">{FONTS}<style>{CSS}</style>{lds}</head><body>
 <div class="util"><div class="wrap"><span class="d">{_e(date.today().strftime("%A %d %B %Y"))}</span>
-<span><a href="/reader/login">Sign in / Subscribe</a><a href="/newsletter">Free daily email</a><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
+<span><a href="/reader/login">Sign in / Subscribe</a><a href="/newsletter">Free daily email</a><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise solutions</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
 {_mast()}{body}
 <footer><div class="wrap"><div class="fg"><div><div class="logo">Compe<b style="color:#2dd4bf">Pharma</b></div>
 <p style="margin-top:10px;max-width:420px">Pharma business news written by CompePharma's editorial system from company filings with the SEC and
@@ -477,7 +477,7 @@ official FDA, EMA and European Commission records. Not investment advice.</p></d
 <div><h4>Sections</h4><ul>{beats_li}</ul></div>
 <div><h4>Regulatory</h4><ul><li><a href="{VIGIEYE}/">VigiEye news</a></li><li><a href="{VIGIEYE}/pdufa">PDUFA calendar</a></li>
 <li><a href="{VIGIEYE}/approvals">Approvals</a></li><li><a href="{VIGIEYE}/safety">Safety</a></li><li><a href="{VIGIEYE}/newsletter">Daily email</a></li></ul></div>
-<div><h4>Company</h4><ul><li><a href="/newsletter">Daily email</a></li><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/about">About us</a></li><li><a href="/contact">Contact</a></li><li><a href="/editorial-policy">Editorial policy</a></li><li><a href="/privacy">Privacy &amp; cookies</a></li><li><a href="/terms">Terms of use</a></li><li><a href="/disclaimer">Disclaimer</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
+<div><h4>Company</h4><ul><li><a href="/newsletter">Daily email</a></li><li><a href="/enterprise">Enterprise solutions</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/about">About us</a></li><li><a href="/contact">Contact</a></li><li><a href="/editorial-policy">Editorial policy</a></li><li><a href="/privacy">Privacy &amp; cookies</a></li><li><a href="/terms">Terms of use</a></li><li><a href="/disclaimer">Disclaimer</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
 <div class="fine">© {date.today().year} CompePharma, published by PQRA, Marousi, Athens. Every story is original reporting by CompePharma; outbound links go only to official
 sources (regulators and SEC filings).<br>{_legal.FOOTER_NOTE}</div></div></footer></body></html>""")
 
