@@ -11,7 +11,8 @@ from datetime import date
 from html import escape as _e
 
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse as _FileResponse, HTMLResponse
+from pathlib import Path as _Path
 
 UPDATED = "16 November 2026"
 OPERATOR = "PQRA, the regulatory, quality and pharmacovigilance consultancy of Dimitrios Gkikas"
@@ -39,7 +40,7 @@ CSS = """.lg{max-width:780px;margin:34px auto 10px;padding:0 16px;line-height:1.
 
 def _nav() -> str:
     return ('<nav class="lgn"><a href="/about">About</a><a href="/contact">Contact</a><a href="/editorial-policy">Editorial policy</a>'
-            '<a href="/privacy">Privacy &amp; cookies</a><a href="/terms">Terms of use</a><a href="/disclaimer">Disclaimer</a></nav>')
+            '<a href="/privacy">Privacy</a><a href="/cookies">Cookies</a><a href="/terms">Terms of use</a><a href="/disclaimer">Disclaimer</a></nav>')
 
 
 def bodies(s: dict) -> dict[str, tuple[str, str, str]]:
@@ -238,7 +239,20 @@ Editorial responsibility: Dimitrios Gkikas</div>
 def make_router(site: dict, page_fn) -> APIRouter:
     """page_fn(title, description, path, body_html) -> HTMLResponse, using the site's own chrome."""
     router = APIRouter()
+    # Terms, privacy and cookie policies (English and Greek) are full standalone pages kept in static/legal/;
+    # they replace the short built-in versions below when the files are present.
+    legal_dir = _Path(__file__).resolve().parent / "static" / "legal"
+    served = set()
+    for kind in ("terms", "privacy", "cookies"):
+        for lang, suffix in (("en", ""), ("el", "/el")):
+            f = legal_dir / f"{kind}-{lang}.html"
+            if f.exists():
+                router.add_api_route(f"/{kind}{suffix}", (lambda _f=f: _FileResponse(_f, media_type="text/html")),
+                                     methods=["GET"], include_in_schema=False)
+                served.add(f"/{kind}{suffix}")
     for path, (title, desc, html) in bodies(site).items():
+        if path in served:
+            continue
         def handler(_t=title, _d=desc, _p=path, _h=html) -> HTMLResponse:
             return page_fn(_t, _d, _p, f'<style>{CSS}</style><main class="lg">{_h}{_nav()}</main>')
         router.add_api_route(path, handler, methods=["GET"], response_class=HTMLResponse, include_in_schema=False)
@@ -246,5 +260,5 @@ def make_router(site: dict, page_fn) -> APIRouter:
 
 
 FOOTER_LINKS = ('<a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/editorial-policy">Editorial policy</a> · '
-                '<a href="/privacy">Privacy &amp; cookies</a> · <a href="/terms">Terms</a> · <a href="/disclaimer">Disclaimer</a>')
-PATHS = ["/about", "/contact", "/editorial-policy", "/privacy", "/terms", "/disclaimer"]
+                '<a href="/privacy">Privacy</a> · <a href="/cookies">Cookies</a> · <a href="/terms">Terms</a> · <a href="/disclaimer">Disclaimer</a>')
+PATHS = ["/about", "/contact", "/editorial-policy", "/privacy", "/cookies", "/terms", "/disclaimer"]
