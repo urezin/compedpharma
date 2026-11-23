@@ -33,12 +33,29 @@ elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
 IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
-SESSION_SECRET = os.getenv("SESSION_SECRET", "") or os.getenv("STRIPE_WEBHOOK_SECRET", "") or "dev-insecure-compedpharma"
+import logging  # noqa: E402
+log = logging.getLogger("compedpharma")
+
+# Production = on Render or on Postgres. There, sessions are signed only with SESSION_SECRET: no fallback to
+# the Stripe secret or a dev string (a guessable key would let anyone forge a session for any account).
+# Without it the CRM/HR app refuses to sign anyone in (503) and says so loudly in the log; the news portal
+# keeps running, so a missing variable cannot take the whole site down.
+IS_PRODUCTION = bool(os.getenv("RENDER")) or not IS_SQLITE or os.getenv("ENV", "").lower() == "production"
+SESSION_SECRET = os.getenv("SESSION_SECRET", "")
+if not SESSION_SECRET:
+    if IS_PRODUCTION:
+        log.critical("SESSION_SECRET is not set: /app sign-in is DISABLED until it is set in the environment.")
+    else:
+        SESSION_SECRET = "dev-only-" + secrets.token_hex(16)   # random per process, never a fixed string
+AUTH_ENABLED = bool(SESSION_SECRET)
 SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "30"))
 COOKIE_NAME = "compedpharma_session"
 APP_BASE_URL = os.getenv("APP_BASE_URL") or os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 BILLING = bool(STRIPE_SECRET_KEY)
+# Closed accounts (no paid module left) are purged with all their data this long after closing.
+PURGE_AFTER_DAYS = int(os.getenv("PURGE_AFTER_DAYS", "183"))
 
 engine = create_engine(DATABASE_URL, future=True,
                        connect_args={"check_same_thread": False} if IS_SQLITE else {},
@@ -88,6 +105,10 @@ class Account(Base):
     password_hash: Mapped[str] = mapped_column(String(128), default="")
     suite: Mapped[bool] = mapped_column(Boolean, default=False)      # owns everything
     stripe_customer_id: Mapped[str] = mapped_column(String(80), default="")
+    suite_subscription_id: Mapped[str] = mapped_column(String(80), default="")
+    # Set when the last paid module ends (cancelled / unpaid); the account and its data are purged
+    # PURGE_AFTER_DAYS later unless the customer buys again. Empty while the account has paid access.
+    closed_at: Mapped[str] = mapped_column(String(40), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -98,6 +119,11 @@ class ModuleGrant(Base):
     module: Mapped[str] = mapped_column(String(20), index=True)
     source: Mapped[str] = mapped_column(String(20), default="purchase")
     stripe_session_id: Mapped[str] = mapped_column(String(120), default="", index=True)
+    stripe_subscription_id: Mapped[str] = mapped_column(String(80), default="", index=True)
+    # Record of the checkout declarations: buying as a business, and the request for immediate access
+    # with the acknowledgement that the withdrawal right then ends (Directive 2011/83/EU art. 16(m)).
+    business_confirmed_at: Mapped[str] = mapped_column(String(40), default="")
+    waiver_at: Mapped[str] = mapped_column(String(40), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -288,7 +314,7 @@ def make_session(acc: Account) -> str:
 
 
 def read_session(token: str | None):
-    if not token or "." not in token:
+    if not AUTH_ENABLED or not token or "." not in token:
         return None
     try:
         raw_b64, sig_b64 = token.split(".", 1)
@@ -351,23 +377,50 @@ def _migrate():
     idempotent ALTERs. Works on SQLite and Postgres; ignores 'already exists'.
     """
     cols = {
-        "status": "VARCHAR(20) DEFAULT 'Draft'",
-        "version": "INTEGER DEFAULT 1",
-        "submitted_at": "VARCHAR(40) DEFAULT ''",
-        "approved_at": "VARCHAR(40) DEFAULT ''",
+        "docs_documents": {
+            "status": "VARCHAR(20) DEFAULT 'Draft'",
+            "version": "INTEGER DEFAULT 1",
+            "submitted_at": "VARCHAR(40) DEFAULT ''",
+            "approved_at": "VARCHAR(40) DEFAULT ''",
+        },
+        "accounts": {
+            "suite_subscription_id": "VARCHAR(80) DEFAULT ''",
+            "closed_at": "VARCHAR(40) DEFAULT ''",
+        },
+        "module_grants": {
+            "stripe_subscription_id": "VARCHAR(80) DEFAULT ''",
+            "business_confirmed_at": "VARCHAR(40) DEFAULT ''",
+            "waiver_at": "VARCHAR(40) DEFAULT ''",
+        },
     }
-    for name, ddl in cols.items():
+    for table, tcols in cols.items():
+        for name, ddl in tcols.items():
+            try:
+                with engine.begin() as conn:
+                    conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
+            except Exception:
+                pass
+
+
+def _purge_loop():
+    while True:
         try:
-            with engine.begin() as conn:
-                conn.exec_driver_sql(f"ALTER TABLE docs_documents ADD COLUMN {name} {ddl}")
+            with SessionLocal() as db:
+                n = purge_closed_accounts(db)
+            if n:
+                log.info("purged %d closed account(s)", n)
         except Exception:
-            pass
+            log.exception("purge of closed accounts failed")
+        time.sleep(24 * 3600)
 
 
 @app.on_event("startup")
 def _startup():
     Base.metadata.create_all(bind=engine)
     _migrate()
+    if os.getenv("DISABLE_PURGE_THREAD") != "1":
+        import threading
+        threading.Thread(target=_purge_loop, name="purge-closed-accounts", daemon=True).start()
 
 
 # Public news portal (the business of pharma) is the homepage; the CRM/HR app lives at /app.
@@ -414,6 +467,62 @@ for _n, _m in _ICONS.items():
     app.add_api_route(f"/{_n}", _icon_route(_n, _m), methods=["GET"], include_in_schema=False)
 
 
+# ---------- self-hosted fonts (static/fonts; Fontsource, SIL OFL 1.1) ----------
+# Visitors load fonts only from this server, so no visitor IP reaches Google or a CDN. The .woff2 files are served
+# from static/fonts when present; otherwise the server downloads the pinned Fontsource release once, checks its
+# SHA-256 and keeps it in memory (and on disk when writable). If that fails the CSS falls back to system fonts.
+_FONT_DIR = os.path.join(_STATIC, "static", "fonts")
+_FONT_TYPES = {".woff2": "font/woff2", ".css": "text/css; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
+_FONT_PKG = {"inter": "@fontsource-variable/inter@5.3.0", "source-serif-4": "@fontsource-variable/source-serif-4@5.3.1"}
+FONT_SHA256 = {
+    "inter-latin-wght-normal.woff2": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+    "inter-latin-ext-wght-normal.woff2": "34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956",
+    "source-serif-4-latin-wght-normal.woff2": "382475f38242c52d42a3e5ff8dc69b5d73f10d0d21e4550b5fe232984688779a",
+    "source-serif-4-latin-ext-wght-normal.woff2": "d10ccbbd0dc4ebae2938958dc1f622a53460fe297e9c958564742dd684309c3f",
+}
+_font_cache: dict[str, bytes] = {}
+
+
+def _fetch_font(name: str) -> bytes | None:
+    """Download a pinned Fontsource file (server side only) and accept it only if the SHA-256 matches."""
+    pkg = _FONT_PKG["source-serif-4" if name.startswith("source-serif-4") else "inter"]
+    import httpx
+    for host in ("https://cdn.jsdelivr.net/npm/", "https://unpkg.com/"):
+        try:
+            r = httpx.get(f"{host}{pkg}/files/{name}", timeout=15, follow_redirects=True)
+            if r.status_code == 200 and hashlib.sha256(r.content).hexdigest() == FONT_SHA256[name]:
+                return r.content
+        except Exception:
+            pass
+    log.warning("could not fetch font %s; pages fall back to system fonts", name)
+    return None
+
+
+@app.get("/fonts/{name}", include_in_schema=False)
+def font_file(name: str):
+    from fastapi.responses import Response
+    ext = os.path.splitext(name)[1]
+    path = os.path.join(_FONT_DIR, name)
+    if "/" in name or "\\" in name or name.startswith(".") or ext not in _FONT_TYPES:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    cache = "public, max-age=31536000, immutable" if ext == ".woff2" else "public, max-age=86400"
+    if os.path.isfile(path):
+        return FileResponse(path, media_type=_FONT_TYPES[ext], headers={"Cache-Control": cache})
+    if name not in FONT_SHA256:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    if name not in _font_cache:
+        data = _fetch_font(name)
+        if data is None:
+            return JSONResponse({"error": "Font unavailable."}, status_code=404)
+        _font_cache[name] = data
+        try:
+            with open(path, "wb") as f:
+                f.write(data)
+        except OSError:
+            pass
+    return Response(_font_cache[name], media_type="font/woff2", headers={"Cache-Control": cache})
+
+
 @app.get("/site.webmanifest", include_in_schema=False)
 def webmanifest():
     from fastapi.responses import JSONResponse
@@ -442,8 +551,47 @@ class LoginIn(BaseModel):
     password: str
 
 
+# ---------- sign-in rate limiting (in memory, per process) ----------
+LOGIN_MAX_FAILS = int(os.getenv("LOGIN_MAX_FAILS", "8"))        # failed logins per IP+email per window
+REGISTER_MAX = int(os.getenv("REGISTER_MAX", "10"))             # sign-ups per IP per window
+RATE_WINDOW = int(os.getenv("RATE_WINDOW_SECONDS", "900"))
+_hits: dict[str, list[float]] = {}
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")   # Render's proxy puts the client first
+    return (fwd.split(",")[0].strip() if fwd else "") or (request.client.host if request.client else "?")
+
+
+def _too_many(key: str, limit: int) -> bool:
+    now = time.time()
+    recent = [t for t in _hits.get(key, []) if now - t < RATE_WINDOW]
+    _hits[key] = recent
+    if len(_hits) > 20000:
+        _hits.clear()
+    return len(recent) >= limit
+
+
+def _hit(key: str):
+    _hits.setdefault(key, []).append(time.time())
+
+
+def _auth_off():
+    return JSONResponse({"error": "Sign-in is temporarily unavailable. Please try again later."}, status_code=503)
+
+
+def _slow_down():
+    return JSONResponse({"error": "Too many attempts. Please wait 15 minutes and try again."}, status_code=429)
+
+
 @app.post("/api/register")
-def register(body: RegisterIn, db: Session = Depends(get_db)):
+def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
+    if not AUTH_ENABLED:
+        return _auth_off()
+    rk = "reg:" + _client_ip(request)
+    if _too_many(rk, REGISTER_MAX):
+        return _slow_down()
+    _hit(rk)
     email = (body.email or "").strip().lower()
     if "@" not in email or "." not in email.split("@")[-1]:
         return JSONResponse({"error": "Enter a valid email address."}, status_code=400)
@@ -462,11 +610,20 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
 
 
 @app.post("/api/login")
-def login(body: LoginIn, db: Session = Depends(get_db)):
+def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
+    if not AUTH_ENABLED:
+        return _auth_off()
     email = (body.email or "").strip().lower()
+    ip = _client_ip(request)
+    keys = (f"login:{ip}:{email}", f"login-ip:{ip}")
+    if _too_many(keys[0], LOGIN_MAX_FAILS) or _too_many(keys[1], LOGIN_MAX_FAILS * 5):
+        return _slow_down()
     acc = db.execute(select(Account).where(func.lower(Account.email) == email)).scalars().first()
     if not acc or not verify_password(body.password or "", acc.password_salt, acc.password_hash):
+        for k in keys:
+            _hit(k)
         return JSONResponse({"error": "Incorrect email or password."}, status_code=401)
+    _hits.pop(keys[0], None)
     resp = JSONResponse({"ok": True})
     _set_cookie(resp, acc)
     return resp
@@ -487,6 +644,7 @@ def me(session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Sessio
     owned = owned_modules(db, acc)
     return {"authenticated": True, "email": acc.email, "name": acc.name, "org": acc.org,
             "suite": acc.suite, "owned": sorted(owned), "billing": BILLING,
+            "can_manage_billing": BILLING and bool(acc.stripe_customer_id),
             "modules": _module_catalog(owned), "suite_price": SUITE_PRICE_CENTS / 100.0}
 
 
@@ -505,6 +663,8 @@ def _stripe():
 
 class BuyIn(BaseModel):
     module: str   # a module key, or "suite"
+    business: bool = False   # "I am buying for my business, not as a consumer"
+    waiver: bool = False     # "Start access now; I understand the withdrawal right then ends"
 
 
 @app.post("/api/checkout")
@@ -515,9 +675,18 @@ def checkout(body: BuyIn, session: str | None = Cookie(default=None, alias=COOKI
         return JSONResponse({"error": "Please sign in."}, status_code=401)
     if not BILLING:
         return JSONResponse({"error": "Payments aren’t switched on yet."}, status_code=400)
+    # The app is sold to business customers only (Terms P6). Both declarations are explicit, unticked
+    # boxes in the checkout dialog; they are recorded on the grant when the payment is confirmed.
+    if not body.business:
+        return JSONResponse({"error": "The CompePharma app is sold to business customers only. "
+                                      "Please confirm you are buying for your business."}, status_code=400)
+    if not body.waiver:
+        return JSONResponse({"error": "Please confirm that access should start now."}, status_code=400)
     key = body.module
     base = APP_BASE_URL.rstrip("/")
     if key == "suite":
+        if acc.suite:
+            return JSONResponse({"error": "You already have the Suite."}, status_code=400)
         name, amount, interval = f"{APP_NAME} Suite (all modules)", SUITE_PRICE_CENTS, "month"
         mode = "subscription"
     elif key in MODULES:
@@ -527,16 +696,25 @@ def checkout(body: BuyIn, session: str | None = Cookie(default=None, alias=COOKI
         mode = "subscription"
     else:
         return JSONResponse({"error": "Unknown module."}, status_code=404)
+    now = utcnow().isoformat()
+    meta = {"account_id": str(acc.id), "module": key, "business_confirmed_at": now, "waiver_at": now}
     try:
         stripe = _stripe()
-        line = {"price_data": {"currency": "usd", "unit_amount": amount,
+        line = {"price_data": {"currency": "usd", "unit_amount": amount, "tax_behavior": "exclusive",
                                "recurring": {"interval": interval}, "product_data": {"name": name}}, "quantity": 1}
-        s = stripe.checkout.Session.create(
-            mode=mode, line_items=[line],
-            success_url=f"{base}/app?purchased=1&session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{base}/app",
-            customer_email=acc.email,
-            metadata={"account_id": str(acc.id), "module": key})
+        kw = dict(mode=mode, line_items=[line],
+                  success_url=f"{base}/app?purchased=1&session_id={{CHECKOUT_SESSION_ID}}",
+                  cancel_url=f"{base}/app",
+                  metadata=meta, subscription_data={"metadata": meta},
+                  billing_address_collection="required", tax_id_collection={"enabled": True})
+        if os.getenv("STRIPE_AUTOMATIC_TAX") == "1":       # needs Stripe Tax set up in the dashboard
+            kw["automatic_tax"] = {"enabled": True}
+        if acc.stripe_customer_id:
+            kw["customer"] = acc.stripe_customer_id
+            kw["customer_update"] = {"address": "auto", "name": "auto"}
+        else:
+            kw["customer_email"] = acc.email
+        s = stripe.checkout.Session.create(**kw)
         return {"url": s.url}
     except Exception as e:
         return JSONResponse({"error": f"Checkout error: {e}"}, status_code=400)
@@ -544,6 +722,13 @@ def checkout(body: BuyIn, session: str | None = Cookie(default=None, alias=COOKI
 
 class FulfillIn(BaseModel):
     session_id: str
+
+
+def _sid(x) -> str:
+    """Stripe ids arrive as a string or an expanded object."""
+    if not x:
+        return ""
+    return x if isinstance(x, str) else (x.get("id") or "")
 
 
 @app.post("/api/fulfill")
@@ -564,18 +749,122 @@ def fulfill(body: FulfillIn, db: Session = Depends(get_db)):
     if not acc:
         return JSONResponse({"error": "Missing account."}, status_code=400)
     if sess.get("customer"):
-        acc.stripe_customer_id = sess["customer"]
+        acc.stripe_customer_id = _sid(sess["customer"])
+    sub_id = _sid(sess.get("subscription"))
     if key == "suite":
         acc.suite = True
+        acc.suite_subscription_id = sub_id
+        acc.closed_at = ""
         db.commit()
         return {"ok": True, "module": "suite"}
     if key in MODULES:
         exists = db.execute(select(ModuleGrant).where(ModuleGrant.stripe_session_id == body.session_id)).scalars().first()
         if not exists:
-            db.add(ModuleGrant(account_id=aid, module=key, source="purchase", stripe_session_id=body.session_id))
+            db.add(ModuleGrant(account_id=aid, module=key, source="purchase", stripe_session_id=body.session_id,
+                               stripe_subscription_id=sub_id,
+                               business_confirmed_at=meta.get("business_confirmed_at", ""),
+                               waiver_at=meta.get("waiver_at", "")))
+        acc.closed_at = ""
         db.commit()
         return {"ok": True, "module": key}
     return {"ok": False, "error": "Unknown module."}
+
+
+@app.post("/api/billing/portal")
+def billing_portal(session: str | None = Cookie(default=None, alias=COOKIE_NAME), db: Session = Depends(get_db)):
+    """Stripe Customer Portal: update the card, see invoices, cancel any subscription in two clicks."""
+    acc = current_account(db, session)
+    if not acc:
+        return JSONResponse({"error": "Please sign in."}, status_code=401)
+    if not BILLING or not acc.stripe_customer_id:
+        return JSONResponse({"error": "There is no billing account yet: nothing has been bought."}, status_code=400)
+    try:
+        p = _stripe().billing_portal.Session.create(customer=acc.stripe_customer_id,
+                                                    return_url=APP_BASE_URL.rstrip("/") + "/app")
+        return {"url": p.url}
+    except Exception as e:
+        return JSONResponse({"error": f"Billing portal error: {e}"}, status_code=400)
+
+
+# ---------- Stripe webhook: access follows the subscription ----------
+ENDED = {"canceled", "unpaid", "incomplete_expired", "past_due", "paused"}
+
+
+def _close_if_empty(db: Session, acc: Account):
+    if not acc.suite and not owned_modules(db, acc) and not acc.closed_at:
+        acc.closed_at = utcnow().isoformat()
+
+
+def revoke_subscription(db: Session, sub_id: str) -> int:
+    """Remove every grant (and the Suite flag) paid for by this subscription. Returns how many were removed."""
+    if not sub_id:
+        return 0
+    n = 0
+    touched = set()
+    for g in db.execute(select(ModuleGrant).where(ModuleGrant.stripe_subscription_id == sub_id)).scalars().all():
+        touched.add(g.account_id)
+        db.delete(g)
+        n += 1
+    for acc in db.execute(select(Account).where(Account.suite_subscription_id == sub_id)).scalars().all():
+        acc.suite = False
+        touched.add(acc.id)
+        n += 1
+    db.flush()
+    for aid in touched:
+        acc = db.get(Account, aid)
+        if acc:
+            _close_if_empty(db, acc)
+    db.commit()
+    return n
+
+
+def restore_subscription(db: Session, sub: dict) -> bool:
+    """Back to active (e.g. a retried payment succeeded): give access again from the subscription metadata."""
+    sub_id = _sid(sub.get("id"))
+    meta = sub.get("metadata") or {}
+    acc = db.get(Account, int(meta.get("account_id") or 0))
+    key = meta.get("module")
+    if not acc or not sub_id:
+        return False
+    if key == "suite":
+        acc.suite, acc.suite_subscription_id = True, sub_id
+    elif key in MODULES:
+        has = db.execute(select(ModuleGrant).where(ModuleGrant.stripe_subscription_id == sub_id)).scalars().first()
+        if not has:
+            db.add(ModuleGrant(account_id=acc.id, module=key, source="purchase", stripe_subscription_id=sub_id,
+                               business_confirmed_at=meta.get("business_confirmed_at", ""),
+                               waiver_at=meta.get("waiver_at", "")))
+    else:
+        return False
+    acc.closed_at = ""
+    db.commit()
+    return True
+
+
+@app.post("/api/stripe/webhook", include_in_schema=False)
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    # Fail closed: without the signing secret no event is trusted.
+    if not STRIPE_WEBHOOK_SECRET:
+        log.error("Stripe webhook called but STRIPE_WEBHOOK_SECRET is not set: event rejected.")
+        return JSONResponse({"error": "Webhook not configured."}, status_code=503)
+    payload = await request.body()
+    try:
+        import stripe
+        event = stripe.Webhook.construct_event(payload, request.headers.get("stripe-signature", ""), STRIPE_WEBHOOK_SECRET)
+    except Exception:
+        return JSONResponse({"error": "Invalid signature."}, status_code=400)
+    etype = event["type"]
+    obj = event["data"]["object"]
+    if etype == "customer.subscription.deleted":
+        revoke_subscription(db, _sid(obj.get("id")))
+    elif etype == "customer.subscription.updated":
+        if obj.get("status") in ENDED:
+            revoke_subscription(db, _sid(obj.get("id")))
+        elif obj.get("status") in ("active", "trialing"):
+            restore_subscription(db, obj)
+    elif etype == "invoice.payment_failed":
+        revoke_subscription(db, _sid(obj.get("subscription")))
+    return {"ok": True}
 
 
 # Demo grant — lets an owner switch a module on without paying (for evaluation).
@@ -1247,3 +1536,146 @@ def docs_ack(body: AckIn, session: str | None = Cookie(default=None, alias=COOKI
     db.add(Acknowledgement(account_id=acc.id, document_id=body.document_id, who=body.who))
     db.commit()
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Deleting records, exporting data, closing the account
+# ---------------------------------------------------------------------------
+# (module, kind) -> model. Every record type a customer can create can also be deleted.
+DELETABLE = {
+    ("crm", "contacts"): Contact, ("crm", "companies"): Company, ("crm", "deals"): Deal,
+    ("crm", "activities"): Activity,
+    ("hr", "employees"): Employee, ("hr", "leave"): LeaveRequest, ("hr", "onboarding"): OnboardingTask,
+    ("ats", "candidates"): Candidate, ("ats", "jobs"): Job,
+    ("docs", "documents"): Document,
+}
+# Every table holding a customer's data, keyed by account_id (used by export, account deletion and purge).
+ACCOUNT_TABLES = [ModuleGrant, Company, Contact, Deal, Activity, Employee, LeaveRequest, OnboardingTask,
+                  Job, Candidate, Document, Acknowledgement, ApprovalStep]
+
+
+@app.delete("/api/{module}/{kind}/{item_id}")
+def delete_record(module: str, kind: str, item_id: int, session: str | None = Cookie(default=None, alias=COOKIE_NAME),
+                  db: Session = Depends(get_db)):
+    """Delete one record for good (it is removed from the database, not hidden)."""
+    model = DELETABLE.get((module, kind))
+    if not model:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    acc = current_account(db, session)
+    if not acc:
+        return JSONResponse({"error": "Please sign in."}, status_code=401)
+    # Deleting stays possible after a module lapses, so customers can always remove what they stored.
+    row = db.get(model, item_id)
+    if not row or row.account_id != acc.id:
+        return JSONResponse({"error": "Not found."}, status_code=404)
+    if model is Document:
+        for m in (ApprovalStep, Acknowledgement):
+            db.execute(m.__table__.delete().where(m.document_id == item_id, m.account_id == acc.id))
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
+
+
+def _rows(db: Session, model, account_id: int) -> list[dict]:
+    out = []
+    for r in db.execute(select(model).where(model.account_id == account_id).order_by(model.id)).scalars().all():
+        d = {}
+        for c in model.__table__.columns:
+            v = getattr(r, c.name)
+            d[c.name] = v.isoformat() if isinstance(v, datetime) else v
+        out.append(d)
+    return out
+
+
+@app.get("/api/account/export")
+def export_account(format: str = "json", session: str | None = Cookie(default=None, alias=COOKIE_NAME),
+                   db: Session = Depends(get_db)):
+    """Everything stored for this account: JSON, or a ZIP with one CSV per table (GDPR art. 20)."""
+    acc = current_account(db, session)
+    if not acc:
+        return JSONResponse({"error": "Please sign in."}, status_code=401)
+    from fastapi.responses import Response
+    profile = {"id": acc.id, "email": acc.email, "name": acc.name, "org": acc.org, "suite": acc.suite,
+               "created_at": acc.created_at.isoformat() if acc.created_at else ""}
+    tables = {m.__tablename__: _rows(db, m, acc.id) for m in ACCOUNT_TABLES}
+    stamp = date.today().isoformat()
+    if format == "csv":
+        import csv, io, zipfile
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            for name, rows in [("account", [profile])] + list(tables.items()):
+                s = io.StringIO()
+                cols = list(rows[0].keys()) if rows else [c.name for c in next(
+                    (m for m in ACCOUNT_TABLES if m.__tablename__ == name)).__table__.columns]
+                w = csv.DictWriter(s, fieldnames=cols)
+                w.writeheader()
+                w.writerows(rows)
+                z.writestr(f"{name}.csv", s.getvalue())
+        return Response(buf.getvalue(), media_type="application/zip",
+                        headers={"Content-Disposition": f'attachment; filename="compepharma-export-{stamp}.zip"'})
+    return Response(json.dumps({"account": profile, **tables}, ensure_ascii=False, indent=2),
+                    media_type="application/json",
+                    headers={"Content-Disposition": f'attachment; filename="compepharma-export-{stamp}.json"'})
+
+
+def _subscription_ids(db: Session, acc: Account) -> set:
+    ids = {g for g in db.execute(select(ModuleGrant.stripe_subscription_id)
+                                 .where(ModuleGrant.account_id == acc.id)).scalars().all() if g}
+    if acc.suite_subscription_id:
+        ids.add(acc.suite_subscription_id)
+    return ids
+
+
+def erase_account(db: Session, acc: Account):
+    """Delete the account and every row it owns. Invoices stay with Stripe (tax law), not here."""
+    for m in ACCOUNT_TABLES:
+        db.execute(m.__table__.delete().where(m.account_id == acc.id))
+    db.delete(acc)
+    db.commit()
+
+
+class DeleteAccountIn(BaseModel):
+    password: str
+
+
+@app.post("/api/account/delete")
+def delete_account(body: DeleteAccountIn, request: Request, session: str | None = Cookie(default=None, alias=COOKIE_NAME),
+                   db: Session = Depends(get_db)):
+    acc = current_account(db, session)
+    if not acc:
+        return JSONResponse({"error": "Please sign in."}, status_code=401)
+    rk = f"del:{acc.id}"
+    if _too_many(rk, LOGIN_MAX_FAILS):
+        return _slow_down()
+    if not verify_password(body.password or "", acc.password_salt, acc.password_hash):
+        _hit(rk)
+        return JSONResponse({"error": "Incorrect password."}, status_code=401)
+    subs = _subscription_ids(db, acc)
+    if subs and BILLING:
+        stripe = _stripe()
+        for sid in subs:
+            try:
+                stripe.Subscription.cancel(sid)
+            except Exception as e:      # already cancelled is fine; anything else stops the deletion
+                if "No such subscription" not in str(e) and "canceled" not in str(e):
+                    return JSONResponse({"error": f"Could not cancel your subscription ({e}). Nothing was deleted; "
+                                                  "please try again or write to info@compepharma.com."}, status_code=502)
+    erase_account(db, acc)
+    resp = JSONResponse({"ok": True})
+    resp.delete_cookie(COOKIE_NAME, path="/")
+    return resp
+
+
+def purge_closed_accounts(db: Session, now: datetime | None = None) -> int:
+    """Erase accounts closed more than PURGE_AFTER_DAYS ago (privacy policy: 6 months after closure)."""
+    from datetime import timedelta
+    cutoff = ((now or utcnow()) - timedelta(days=PURGE_AFTER_DAYS)).isoformat()
+    n = 0
+    for acc in db.execute(select(Account).where(Account.closed_at != "", Account.closed_at < cutoff)).scalars().all():
+        if acc.suite or owned_modules(db, acc):      # bought again since: keep
+            acc.closed_at = ""
+            db.commit()
+            continue
+        erase_account(db, acc)
+        n += 1
+    return n
