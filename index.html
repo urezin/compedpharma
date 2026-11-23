@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CompePharma — Modular CRM &amp; HR</title>
 <meta name="description" content="A modular CRM + HR platform. Activate only the modules you need — CRM, HR, Recruiting, and Document Center.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
 <style>
@@ -185,6 +184,9 @@
   .field input:focus,.addbar input:focus,.addbar select:focus{outline:none;border-color:var(--ink)}
   .err{background:#fdecea;color:#c0392b;border-radius:4px;padding:9px 12px;font-size:13.5px;margin-bottom:12px;display:none}
   .err.show{display:block}
+  .fine{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.5}.fine a{color:inherit;text-decoration:underline}
+  label.ck{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin:0 0 12px;line-height:1.45}label.ck input{margin-top:3px}
+  .btn-danger{background:#c0392b!important;color:#fff!important;border-color:#c0392b!important}
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#000;color:#fff;border-left:4px solid var(--red);padding:12px 18px;border-radius:3px;font-size:14px;box-shadow:var(--shadow-lg);z-index:80;display:none}
   .toast.show{display:block}
   .lockbox{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);padding:40px;text-align:center}
@@ -219,6 +221,44 @@
       <div class="field"><label>Email</label><input id="f_email" type="email" required placeholder="you@company.com"></div>
       <div class="field"><label>Password</label><input id="f_pass" type="password" required minlength="8" placeholder="••••••••"></div>
       <button class="btn btn-primary btn-lg" style="width:100%" id="authSubmit">Create account</button>
+      <p class="fine" id="authConsent">By continuing you agree to the <a href="/terms" target="_blank">Terms</a>; see our
+        <a href="/privacy" target="_blank">Privacy Policy</a>. For the contacts, employee and candidate data you store, our
+        <a href="/dpa" target="_blank">Data Processing Agreement</a> applies.</p>
+    </form>
+  </div>
+</div>
+
+<!-- checkout declarations (both boxes start unticked) -->
+<div class="overlay" id="buyOverlay" onclick="if(event.target===this)closeBuy()">
+  <div class="modal">
+    <span class="modal-x" onclick="closeBuy()">×</span>
+    <h2 id="buyTitle">Activate</h2>
+    <p class="swi" id="buyPrice"></p>
+    <div class="err" id="buyErr"></div>
+    <form onsubmit="return submitBuy(event)">
+      <label class="ck"><input type="checkbox" id="buyBiz"> I am buying for my business (company, sole trader or
+        organisation), not as a consumer. The app is sold to business customers only.</label>
+      <label class="ck"><input type="checkbox" id="buyWaiver"> I ask for access to start immediately after payment and
+        understand that, once it starts, any 14-day right of withdrawal ends.</label>
+      <button class="btn btn-primary btn-lg" style="width:100%" id="buySubmit">Continue to secure checkout</button>
+      <p class="fine">Billed monthly until you cancel. Cancel any time under your account menu → Manage billing / cancel.
+        Prices exclude VAT; enter your VAT number at checkout. See the <a href="/terms" target="_blank">Terms</a> and
+        <a href="/privacy" target="_blank">Privacy Policy</a>.</p>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="delOverlay" onclick="if(event.target===this)closeDel()">
+  <div class="modal">
+    <span class="modal-x" onclick="closeDel()">×</span>
+    <h2>Delete my account</h2>
+    <p class="swi">This permanently deletes your account and everything stored in it (contacts, companies, deals,
+      activities, employees, leave, onboarding, jobs, candidates, documents and signatures) and cancels any active
+      subscription. It cannot be undone. <a onclick="exportData('json')">Export your data first</a>.</p>
+    <div class="err" id="delErr"></div>
+    <form onsubmit="return submitDel(event)">
+      <div class="field"><label>Your password</label><input id="del_pass" type="password" required autocomplete="current-password"></div>
+      <button class="btn btn-danger btn-lg" style="width:100%" id="delSubmit">Delete everything</button>
     </form>
   </div>
 </div>
@@ -259,6 +299,11 @@ function renderTop(){
         ${ME.org?`<div style="padding:0 12px 8px;font-size:13px;font-weight:600">${esc(ME.org)}</div>`:''}
         <div class="sep"></div>
         <div class="mi" onclick="go('store')">Manage modules</div>
+        ${ME.can_manage_billing?'<div class="mi" onclick="manageBilling()">Manage billing / cancel</div>':''}
+        <div class="mi" onclick="exportData('json')">Export my data (JSON)</div>
+        <div class="mi" onclick="exportData('csv')">Export my data (CSV)</div>
+        <div class="mi" onclick="openDel()">Delete my account</div>
+        <div class="sep"></div>
         <a class="mi" href="/api/logout">Log out</a>
       </div></div>`;
   } else {
@@ -279,17 +324,17 @@ function renderLanding(){
         <h1>Run your business on the <span>modules you actually need.</span></h1>
         <p>CompePharma is a modular CRM &amp; HR platform. Turn on CRM, HR, Recruiting, or the Document Center independently — and only pay for what you use.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-lg" onclick="openAuth('register')">Start free</button>
+          <button class="btn btn-primary btn-lg" onclick="openAuth('register')">Create account</button>
           <button class="btn btn-ghost btn-lg" onclick="document.getElementById('modstore').scrollIntoView({behavior:'smooth'})">See modules</button>
         </div>
       </div>
       <div class="hero-card"><h4>Modules</h4>
-        ${mods.map(m=>`<div class="row"><span class="i">${m.icon}</span>${esc(m.name)}<span style="margin-left:auto;color:var(--muted);font-weight:600">$${m.price}/mo</span></div>`).join("")}
+        ${mods.map(m=>`<div class="row"><span class="i">${m.icon}</span>${esc(m.name)}<span style="margin-left:auto;color:var(--muted);font-weight:600">$${m.price}/mo + VAT</span></div>`).join("")}
       </div>
     </div>
     <div id="modstore">
       <div class="sec-h"><span>Pick your modules</span></div>
-      <p style="color:var(--muted);margin:0 0 20px">Each one works on its own. Add more any time.</p>
+      <p style="color:var(--muted);margin:0 0 20px">Each one works on its own. Add more any time. For business customers; prices exclude VAT.</p>
       <div class="mods">${mods.map(m=>modCard(m,false)).join("")}</div>
     </div>
     <div style="margin-top:40px">${dailyBox("")}</div>
@@ -304,14 +349,15 @@ function dailyBox(email){
     <form onsubmit="return subscribeDaily(event,this)">
       <input type="email" name="email" required placeholder="Work email" aria-label="Work email" value="${esc(email||'')}">
       <button class="btn btn-primary" type="submit">Subscribe</button>
-    </form></section>`;
+    </form><p class="fine" style="grid-column:1/-1">Unsubscribe any time with the link in every email. By continuing you agree to the
+    <a href="/terms">Terms</a>; see our <a href="/privacy">Privacy Policy</a>.</p></section>`;
 }
 async function subscribeDaily(e,form){
   e.preventDefault();
   const email=form.email.value.trim(), btn=form.querySelector("button");
   btn.disabled=true;
   const {ok,data}=await api("/api/newsletter",{method:"POST",body:JSON.stringify({email,src:ME&&ME.authenticated?"app-dashboard":"app-landing"})});
-  if(ok){try{localStorage.setItem('cpDaily',email)}catch(_){}form.outerHTML=`<div class="done">✓ You're in. CompePharma Daily goes to ${esc(email)} every weekday morning.</div>`;}
+  if(ok){try{localStorage.setItem('cpDaily','1')}catch(_){}form.outerHTML=`<div class="done">✓ You're in. CompePharma Daily goes to ${esc(email)} every weekday morning.</div>`;}
   else{btn.disabled=false;toast((data&&data.error)||"That didn't work. Check the address and try again.");}
   return false;
 }
@@ -321,7 +367,7 @@ function siteFooter(){
     <p style="margin-top:10px;max-width:420px">The business of pharma: daily news and analysis, plus a modular CRM &amp; HR platform for pharma teams.</p></div>
     <div><h4>News</h4><ul><li><a href="/">Home</a></li><li><a href="/insights">Insights</a></li><li><a href="/news/deals">Deals</a></li><li><a href="/news/earnings">Earnings</a></li></ul></div>
     <div><h4>Daily email</h4><ul><li><a href="/newsletter">CompePharma Daily</a></li><li><a href="https://vigi-eye.com/newsletter?utm_source=compepharma">VigiEye daily</a></li></ul></div>
-    <div><h4>Company</h4><ul><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/terms">Terms</a></li><li><a href="/disclaimer">Disclaimer</a></li></ul></div></div>
+    <div><h4>Company</h4><ul><li><a href="/enterprise">Enterprise</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/cookies">Cookies</a></li><li><a href="/terms">Terms</a></li><li><a href="/dpa">Data processing agreement</a></li><li><a href="/disclaimer">Disclaimer</a></li></ul></div></div>
     <div class="fine">© ${new Date().getFullYear()} CompePharma.</div></div></footer>`;
 }
 function modCard(m, owned){
@@ -330,7 +376,7 @@ function modCard(m, owned){
     <h3>${esc(m.name)}</h3>
     <p class="tl">${esc(m.tagline)}</p>
     <ul>${m.features.map(f=>`<li><span class="ck">✓</span>${esc(f)}</li>`).join("")}</ul>
-    <div class="price">$${m.price}<small>/mo</small></div>
+    <div class="price">$${m.price}<small>/mo excl. VAT</small></div>
     ${owned?'<span class="owned-tag">✓ Active</span>'
       :`<button class="btn btn-primary" onclick="activate('${m.key}')">Activate module</button>`}
   </div>`;
@@ -406,7 +452,7 @@ function renderStore(){
   $("#main").innerHTML=`
     <div class="page-h"><div><h1>Modules</h1><p>Activate only what you need. Turn more on any time.</p></div></div>
     ${ME.suite?'':`<div class="bundle"><div><h3>🚀 Full Suite</h3><p>Every module — CRM, HR, Recruiting &amp; Documents — in one plan.</p></div>
-      <div style="text-align:right"><div class="price">$${ME.suite_price}<small style="font-size:13px;color:#c3cede">/mo</small></div>
+      <div style="text-align:right"><div class="price">$${ME.suite_price}<small style="font-size:13px;color:#c3cede">/mo excl. VAT</small></div>
       <button class="btn" style="background:#fff;color:var(--navy);margin-top:8px" onclick="activate('suite')">Get the Suite</button></div></div>`}
     <div class="mods">${mods.map(m=>modCard(m,owned.has(m.key))).join("")}</div>`;
 }
@@ -416,21 +462,64 @@ function renderLocked(key){
   $("#main").innerHTML=`<div class="lockbox"><div class="ic">${m.icon||'🔒'}</div>
     <h2>${esc(m.name||'Module')} isn't active</h2>
     <p>${esc(m.tagline||'')}</p>
-    <button class="btn btn-primary btn-lg" onclick="activate('${key}')">Activate for $${m.price}/mo</button></div>`;
+    <button class="btn btn-primary btn-lg" onclick="activate('${key}')">Activate for $${m.price}/mo + VAT</button></div>`;
 }
 
 /* ---------- activate (paid checkout only — no free self-grant) ---------- */
 async function activate(key){
   if(!ME.authenticated){ pending=key; openAuth('register'); return; }
-  if(ME.billing){
-    // Stripe Checkout collects a card before any access is granted.
-    const {ok,data}=await api("/api/checkout",{method:"POST",body:JSON.stringify({module:key})});
-    if(ok&&data.url){ location.href=data.url; return; }
-    toast(data.error||"Couldn't start checkout."); return;
-  }
+  if(ME.billing){ openBuy(key); return; }
   // Billing not configured yet — no free access. Prompt to enable payments.
   toast("Card payments aren't enabled yet — set up Stripe to activate modules.");
 }
+/* ---------- checkout declarations ---------- */
+let BUYKEY=null;
+function openBuy(key){
+  BUYKEY=key;
+  const m=(ME.modules||[]).find(x=>x.key===key);
+  $("#buyTitle").textContent=key==="suite"?"Activate the Full Suite":"Activate "+(m?m.name:"module");
+  $("#buyPrice").textContent="$"+(key==="suite"?ME.suite_price:(m?m.price:""))+" a month, excl. VAT";
+  $("#buyBiz").checked=false;$("#buyWaiver").checked=false;$("#buyErr").classList.remove("show");
+  $("#buyOverlay").classList.add("open");
+}
+function closeBuy(){$("#buyOverlay").classList.remove("open");}
+async function submitBuy(e){
+  e.preventDefault();const err=$("#buyErr");err.classList.remove("show");
+  const business=$("#buyBiz").checked, waiver=$("#buyWaiver").checked;
+  if(!business||!waiver){err.textContent="Please tick both boxes to continue.";err.classList.add("show");return false;}
+  $("#buySubmit").disabled=true;
+  // Stripe Checkout collects a card before any access is granted.
+  const {ok,data}=await api("/api/checkout",{method:"POST",body:JSON.stringify({module:BUYKEY,business,waiver})});
+  $("#buySubmit").disabled=false;
+  if(ok&&data.url){ location.href=data.url; return false; }
+  err.textContent=data.error||"Couldn't start checkout.";err.classList.add("show");return false;
+}
+
+/* ---------- billing, export, account deletion ---------- */
+async function manageBilling(){
+  const {ok,data}=await api("/api/billing/portal",{method:"POST"});
+  if(ok&&data.url){ location.href=data.url; return; }
+  toast(data.error||"Couldn't open billing.");
+}
+function exportData(fmt){ location.href="/api/account/export?format="+fmt; }
+function openDel(){$("#del_pass").value="";$("#delErr").classList.remove("show");$("#delOverlay").classList.add("open");}
+function closeDel(){$("#delOverlay").classList.remove("open");}
+async function submitDel(e){
+  e.preventDefault();const err=$("#delErr");err.classList.remove("show");
+  if(!confirm("Delete your account and all its data permanently?"))return false;
+  $("#delSubmit").disabled=true;
+  const {ok,data}=await api("/api/account/delete",{method:"POST",body:JSON.stringify({password:$("#del_pass").value})});
+  $("#delSubmit").disabled=false;
+  if(!ok){err.textContent=data.error||"Something went wrong.";err.classList.add("show");return false;}
+  closeDel();VIEW="dashboard";await boot();toast("Your account and all its data were deleted.");return false;
+}
+async function delRow(path,id,after){
+  if(!confirm("Delete this record permanently?"))return;
+  const {ok,data}=await api(`${path}/${id}`,{method:"DELETE"});
+  if(!ok)return toast(data.error||"Couldn't delete.");
+  toast("Deleted");after();
+}
+
 async function refreshMe(){ const {data}=await api("/api/me"); ME=data; renderTop(); }
 
 /* ============================================================= *
@@ -439,7 +528,8 @@ async function refreshMe(){ const {data}=await api("/api/me"); ME=data; renderTo
 function stat(v,k){return `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`;}
 
 function tableView(cfg){
-  // cfg: {cols:[{key,label,fmt?}], rows, addFields:[{key,ph,type?,opts?}], onAdd, actions?(row)}
+  // cfg: {cols:[{key,label,fmt?}], rows, addFields:[{key,ph,type?,opts?}], onAdd, actions?(row), del?:{path,after}}
+  if(cfg.del){const a=cfg.actions;cfg.actions=r=>(a?a(r)+' ':'')+`<button class="btn btn-ghost btn-sm" title="Delete" onclick="delRow('${cfg.del.path}',${r.id},${cfg.del.after})">Delete</button>`;}
   const head=cfg.cols.map(c=>`<th>${c.label}</th>`).join("")+(cfg.actions?'<th></th>':'');
   const body=cfg.rows.length? cfg.rows.map(r=>{
     const tds=cfg.cols.map(c=>`<td>${c.fmt?c.fmt(r[c.key],r):esc(r[c.key])}</td>`).join("");
@@ -478,27 +568,27 @@ async function viewCRM(){
       {key:"value",label:"Value",fmt:v=>money(v)},
       {key:"stage",label:"Stage",fmt:(v,r)=>`<select class="mini" onchange="crmDealStage(${r.id},this.value)">${s.stages.map(st=>`<option ${st===v?'selected':''}>${st}</option>`).join("")}</select>`}],
       addFields:[{key:"title",ph:"Deal name"},{key:"company",ph:"Company"},{key:"value",ph:"Value",type:"number"},{key:"stage",type:"select",opts:s.stages}],
-      onAdd:"crmAddDeal()"});
+      onAdd:"crmAddDeal()",del:{path:"/api/crm/deals",after:"viewCRM"}});
   } else if(SUB.crm==="contacts"){
     const rows=(await api("/api/crm/contacts")).data.items;
     b.innerHTML=tableView({title:"Contacts",rows,cols:[
       {key:"name",label:"Name"},{key:"title",label:"Title"},{key:"company",label:"Company"},
       {key:"email",label:"Email"},{key:"phone",label:"Phone"}],
       addFields:[{key:"name",ph:"Full name"},{key:"title",ph:"Title"},{key:"company",ph:"Company"},{key:"email",ph:"Email"},{key:"phone",ph:"Phone"}],
-      onAdd:"crmAddContact()"});
+      onAdd:"crmAddContact()",del:{path:"/api/crm/contacts",after:"viewCRM"}});
   } else if(SUB.crm==="companies"){
     const rows=(await api("/api/crm/companies")).data.items;
     b.innerHTML=tableView({title:"Companies",rows,cols:[
       {key:"name",label:"Name"},{key:"industry",label:"Industry"},{key:"website",label:"Website"}],
       addFields:[{key:"name",ph:"Company name"},{key:"industry",ph:"Industry"},{key:"website",ph:"Website"}],
-      onAdd:"crmAddCompany()"});
+      onAdd:"crmAddCompany()",del:{path:"/api/crm/companies",after:"viewCRM"}});
   } else {
     const rows=(await api("/api/crm/activities")).data.items;
     b.innerHTML=tableView({title:"Activity log",rows,cols:[
       {key:"kind",label:"Type"},{key:"subject",label:"Subject"},{key:"related",label:"Related to"},
       {key:"created_at",label:"When",fmt:v=>dateOf(v)}],
       addFields:[{key:"kind",type:"select",opts:["note","call","email","meeting"]},{key:"subject",ph:"Subject"},{key:"related",ph:"Related to"}],
-      onAdd:"crmAddActivity()"});
+      onAdd:"crmAddActivity()",del:{path:"/api/crm/activities",after:"viewCRM"}});
   }
 }
 async function crmAddDeal(){const b=readFields(["title","company","value","stage"]);if(!b.title)return toast("Deal name required");b.value=parseFloat(b.value)||0;const{ok,data}=await api("/api/crm/deals",{method:"POST",body:JSON.stringify(b)});ok?viewCRM():toast(data.error||"Error");}
@@ -525,7 +615,7 @@ async function viewHR(){
       {key:"name",label:"Name"},{key:"role",label:"Role"},{key:"department",label:"Dept"},
       {key:"start_date",label:"Start"},{key:"status",label:"Status",fmt:v=>`<span class="pill ${v}">${v}</span>`}],
       addFields:[{key:"name",ph:"Name"},{key:"role",ph:"Role"},{key:"department",ph:"Department"},{key:"email",ph:"Email"},{key:"start_date",ph:"Start date",type:"date"}],
-      onAdd:"hrAddEmployee()"});
+      onAdd:"hrAddEmployee()",del:{path:"/api/hr/employees",after:"viewHR"}});
   } else if(SUB.hr==="leave"){
     const rows=(await api("/api/hr/leave")).data.items;
     b.innerHTML=tableView({title:"Leave requests",rows,cols:[
@@ -533,14 +623,14 @@ async function viewHR(){
       {key:"status",label:"Status",fmt:v=>`<span class="pill ${v}">${v}</span>`}],
       actions:r=>`<button class="btn btn-ghost btn-sm" onclick="hrLeave(${r.id},'Approved')">Approve</button> <button class="btn btn-ghost btn-sm" onclick="hrLeave(${r.id},'Declined')">Decline</button>`,
       addFields:[{key:"employee",ph:"Employee"},{key:"kind",type:"select",opts:["Vacation","Sick","Personal","Parental"]},{key:"start_date",ph:"From",type:"date"},{key:"end_date",ph:"To",type:"date"}],
-      onAdd:"hrAddLeave()"});
+      onAdd:"hrAddLeave()",del:{path:"/api/hr/leave",after:"viewHR"}});
   } else {
     const rows=(await api("/api/hr/onboarding")).data.items;
     b.innerHTML=tableView({title:"Onboarding tasks",rows,cols:[
       {key:"employee",label:"Employee"},{key:"task",label:"Task"},
       {key:"done",label:"Done",fmt:(v,r)=>`<input type="checkbox" ${v?'checked':''} onchange="hrOnbToggle(${r.id})">`}],
       addFields:[{key:"employee",ph:"Employee"},{key:"task",ph:"Task (e.g. Sign contract)"}],
-      onAdd:"hrAddOnboard()"});
+      onAdd:"hrAddOnboard()",del:{path:"/api/hr/onboarding",after:"viewHR"}});
   }
 }
 async function hrAddEmployee(){const b=readFields(["name","role","department","email","start_date"]);if(!b.name)return toast("Name required");const{ok}=await api("/api/hr/employees",{method:"POST",body:JSON.stringify(b)});ok&&viewHR();}
@@ -567,14 +657,14 @@ async function viewATS(){
       {key:"name",label:"Name"},{key:"job",label:"Job"},{key:"email",label:"Email"},
       {key:"stage",label:"Stage",fmt:(v,r)=>`<select class="mini" onchange="atsStage(${r.id},this.value)">${s.stages.map(st=>`<option ${st===v?'selected':''}>${st}</option>`).join("")}</select>`}],
       addFields:[{key:"name",ph:"Candidate name"},{key:"job",ph:"Job"},{key:"email",ph:"Email"},{key:"stage",type:"select",opts:s.stages}],
-      onAdd:"atsAddCandidate()"});
+      onAdd:"atsAddCandidate()",del:{path:"/api/ats/candidates",after:"viewATS"}});
   } else {
     const rows=(await api("/api/ats/jobs")).data.items;
     b.innerHTML=tableView({title:"Job postings",rows,cols:[
       {key:"title",label:"Title"},{key:"department",label:"Dept"},{key:"location",label:"Location"},
       {key:"status",label:"Status",fmt:v=>`<span class="pill ${v==='Open'?'Won':'Lost'}">${v}</span>`}],
       addFields:[{key:"title",ph:"Job title"},{key:"department",ph:"Department"},{key:"location",ph:"Location"}],
-      onAdd:"atsAddJob()"});
+      onAdd:"atsAddJob()",del:{path:"/api/ats/jobs",after:"viewATS"}});
   }
 }
 async function atsAddCandidate(){const b=readFields(["name","job","email","stage"]);if(!b.name)return toast("Name required");const{ok}=await api("/api/ats/candidates",{method:"POST",body:JSON.stringify(b)});ok&&viewATS();}
@@ -605,7 +695,7 @@ async function viewDocs(){
     {key:"expires",label:"Expires"}],
     actions:r=>`<button class="btn btn-ghost btn-sm" onclick="openDoc(${r.id})">Open</button>`,
     addFields:[{key:"title",ph:"Material title"},{key:"category",type:"select",opts:["Material","SOP","Policy","Label / SmPC","Patient leaflet","Training","Other"]},{key:"expires",ph:"Expiry",type:"date"}],
-    onAdd:"docAdd()"});
+    onAdd:"docAdd()",del:{path:"/api/docs/documents",after:"viewDocs"}});
 }
 async function docAdd(){const b=readFields(["title","category","expires"]);if(!b.title)return toast("Title required");const{ok}=await api("/api/docs/documents",{method:"POST",body:JSON.stringify(b)});ok&&viewDocs();}
 async function docAck(id){const who=ME.name||ME.email;await api("/api/docs/ack",{method:"POST",body:JSON.stringify({document_id:id,who})});toast("Acknowledged ✓");viewDocs();}
