@@ -65,7 +65,7 @@ def _e(s) -> str:
 
 def _get(path: str, timeout: float = 25):
     import httpx
-    r = httpx.get(VIGIEYE + path, timeout=timeout, headers={"User-Agent": "CompePharma portal"})
+    r = httpx.get(VIGIEYE + path, timeout=timeout, headers=_gate.vigieye_headers())
     r.raise_for_status()
     return r.json()
 
@@ -184,11 +184,12 @@ def _nl_box(place: str) -> str:
     return (f'<section class="box nlb"><h2>CompePharma Daily</h2><p>Earnings analysis, deals, launches and pricing news, '
             f'every weekday morning. Free.</p><form method="post" action="/newsletter/subscribe" class="nlf">'
             f'<input type="hidden" name="src" value="{_e(place)}"><input type="email" name="email" required placeholder="Work email" aria-label="Work email">'
-            f'<button class="btn" type="submit">Subscribe</button></form></section>')
+            f'<button class="btn" type="submit">Subscribe</button></form>'
+            f'<p class="note" style="margin-top:8px;font-size:12.5px">Unsubscribe any time with the link in every email. {_legal.CONSENT_LINE}</p></section>')
 
 
-FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-         '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,800&display=swap" rel="stylesheet">')
+# Self-hosted (static/fonts, served by main.py at /fonts/): no visitor IP goes to Google for fonts.
+FONTS = '<link rel="stylesheet" href="/fonts/fonts.css">'
 
 CSS = """
 :root{--ink:#0d1321;--mut:#5d6677;--rule:#e3e6eb;--paper:#fff;--tint:#f3f5f8;--navy:#0a1730;--brand:#0e9c8a;--red:#d7263d;
@@ -467,7 +468,7 @@ def _page(title: str, desc: str, path: str, body: str, canonical: str | None = N
 <title>{_e(title)}</title><meta name="description" content="{_e(desc)}"><link rel="canonical" href="{_e(can)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="CompePharma"><meta property="og:title" content="{_e(title)}">
 <meta property="og:description" content="{_e(desc)}"><meta property="og:url" content="{_e(can)}"><meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#000000"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">{FONTS}<style>{CSS}</style>{lds}</head><body>
+<meta name="theme-color" content="#000000"><meta name="tdm-reservation" content="1"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">{FONTS}<style>{CSS}</style>{lds}</head><body>
 <div class="util"><div class="wrap"><span class="d">{_e(date.today().strftime("%A %d %B %Y"))}</span>
 <span><a href="/reader/login">Sign in / Subscribe</a><a href="/newsletter">Free daily email</a><a href="/market-analysis">Market analysis</a><a href="/enterprise">Enterprise solutions</a><a class="vx" href="{VIGIEYE}/?utm_source=compepharma">VigiEye regulatory news</a><a href="/app"><span class="vx">CompePharma </span>CRM &amp; HR →</a></span></div></div>
 {_mast()}{body}
@@ -478,7 +479,7 @@ official FDA, EMA and European Commission records. Not investment advice.</p></d
 <div><h4>Regulatory</h4><ul><li><a href="{VIGIEYE}/">VigiEye news</a></li><li><a href="{VIGIEYE}/pdufa">PDUFA calendar</a></li>
 <li><a href="{VIGIEYE}/approvals">Approvals</a></li><li><a href="{VIGIEYE}/safety">Safety</a></li><li><a href="{VIGIEYE}/newsletter">Daily email</a></li></ul></div>
 <div><h4>Company</h4><ul><li><a href="/newsletter">Daily email</a></li><li><a href="/enterprise">Enterprise solutions</a></li><li><a href="/market-analysis">5-year market analysis</a></li><li><a href="/app">CRM &amp; HR app</a></li><li><a href="/about">About us</a></li><li><a href="/contact">Contact</a></li><li><a href="/editorial-policy">Editorial policy</a></li><li><a href="/privacy">Privacy &amp; cookies</a></li><li><a href="/terms">Terms of use</a></li><li><a href="/disclaimer">Disclaimer</a></li><li><a href="/sitemap.xml">Sitemap</a></li></ul></div></div>
-<div class="fine">© {date.today().year} CompePharma, published by PQRA, Marousi, Athens. Every story is original reporting by CompePharma; outbound links go only to official
+<div class="fine">© {date.today().year} CompePharma, published by PQRA, Marousi, Athens. Every story is original reporting by CompePharma; news stories link to their official
 sources (regulators and SEC filings).<br>{_legal.FOOTER_NOTE}</div></div></footer></body></html>""")
 
 
@@ -878,7 +879,8 @@ def _subscribe(email: str, src: str) -> bool:
         return False
     try:
         import httpx
-        r = httpx.post(VIGIEYE + "/cp/subscribe", json={"email": email, "source": f"cp:{src}"[:60]}, timeout=20)
+        r = httpx.post(VIGIEYE + "/cp/subscribe", json={"email": email, "source": f"cp:{src}"[:60]}, timeout=20,
+                       headers=_gate.vigieye_headers())
         return r.status_code == 200
     except Exception:
         return False
@@ -995,10 +997,28 @@ def indexnow_key():
     return INDEXNOW_KEY
 
 
+# Text-and-data-mining opt-out (Terms section 6; Directive (EU) 2019/790 art. 4(3)) in machine-readable form:
+# AI training / grounding crawlers are refused here, /.well-known/tdmrep.json and the tdm-reservation meta tag say
+# the same for everyone else. Search (Googlebot, Bingbot) and AdSense (Mediapartners-Google) stay allowed.
+AI_BOTS = ["GPTBot", "CCBot", "Google-Extended", "ClaudeBot", "anthropic-ai", "Claude-Web", "Applebot-Extended",
+           "PerplexityBot", "Bytespider", "meta-externalagent", "cohere-ai", "Diffbot", "Omgilibot", "Timpibot"]
+
+
 @router.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
 def robots():
-    return (f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /app\nSitemap: {BASE}/sitemap.xml\n"
+    ai = "".join(f"User-agent: {b}\n" for b in AI_BOTS)
+    return ("# Content is reserved from text and data mining (Directive (EU) 2019/790 art. 4(3)); tdm-reservation: 1.\n"
+            "# See /.well-known/tdmrep.json and our Terms of use, section 6.\n"
+            f"{ai}Disallow: /\n\n"
+            "User-agent: Mediapartners-Google\nAllow: /\n\n"
+            f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /app\nSitemap: {BASE}/sitemap.xml\n"
             f"Sitemap: {BASE}/news-sitemap.xml\n")
+
+
+@router.get("/.well-known/tdmrep.json", include_in_schema=False)
+def tdmrep():
+    from fastapi.responses import JSONResponse
+    return JSONResponse([{"location": "/*", "tdm-reservation": 1, "tdm-policy": f"{BASE}/terms"}])
 
 
 @router.get("/news-sitemap.xml", include_in_schema=False)
