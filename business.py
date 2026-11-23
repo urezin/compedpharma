@@ -21,6 +21,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from portal import VIGIEYE, _beatbar, _e, _page
 import main as _main
+from gate import vigieye_headers
+import legal as _legal
 
 router = APIRouter()
 
@@ -90,7 +92,7 @@ def _fmt_money(cents: int) -> str:
 
 def _vg(path: str, params: dict | None = None, timeout: float = 15):
     import httpx
-    r = httpx.get(VIGIEYE + path, params=params or {}, timeout=timeout)
+    r = httpx.get(VIGIEYE + path, params=params or {}, timeout=timeout, headers=vigieye_headers())
     r.raise_for_status()
     return r.json()
 
@@ -103,7 +105,7 @@ async def _forward(request: Request, kind_default: str, source: str) -> bool:
                "source": f"cp:{source}"[:80], "website": g("website")}
     try:
         import httpx
-        r = httpx.post(VIGIEYE + "/cp/enquiry", json=payload, timeout=20)
+        r = httpx.post(VIGIEYE + "/cp/enquiry", json=payload, timeout=20, headers=vigieye_headers())
         return r.status_code == 200
     except Exception:
         return False
@@ -125,7 +127,8 @@ def _form(action: str, kinds: list[tuple[str, str]], kind: str = "", product: st
 <div class="full"><label for="f-msg">Anything we should know</label><textarea id="f-msg" name="message" placeholder="{_e(message_ph)}"></textarea></div>
 <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
 <div class="full"><button class="btn" type="submit">{_e(button)}</button>
-<p class="note" style="margin-top:10px">We reply from info@compepharma.com, usually within one business day. Prices exclude VAT.</p></div></div></form>"""
+<p class="note" style="margin-top:10px">We reply from info@compepharma.com, usually within one business day. Prices exclude VAT.
+{_legal.CONSENT_LINE}</p></div></div></form>"""
 
 
 def _status(sent: str) -> str:
@@ -145,7 +148,7 @@ def enterprise(sent: str = ""):
     mod_cards = "".join(
         f'<div class="bz-card"><h3>{_e(m["name"])}</h3><p>{_e(m["tagline"])}</p>'
         f'<ul>{"".join(f"<li>{_e(f)}</li>" for f in m["features"])}</ul>'
-        f'<div class="pr">{_fmt_money(m["price_cents"])} <small>per month</small></div></div>' for m in mods.values())
+        f'<div class="pr">{_fmt_money(m["price_cents"])} <small>per month, excl. VAT</small></div></div>' for m in mods.values())
     suite = _fmt_money(_main.SUITE_PRICE_CENTS)
     body = f"""<style>{CSS}</style>{_beatbar("")}
 <section class="bz-hero"><div class="wrap"><div class="k">CompePharma Enterprise</div>
@@ -176,15 +179,15 @@ territory, a portfolio. Every forecast covers {HORIZON} with base, low and high 
 <div class="pr">{PRICE_CUSTOM}</div><div class="go"><a class="btn ghost" href="/market-analysis?kind=report-custom#order">Brief us</a></div></div></div></section>
 
 <section class="bz-sec"><div class="k">Business Suite</div><h2 class="t">CRM, HR, recruiting and documents, sold as modules</h2>
-<p class="lede">Buy only the modules you need, or the whole Suite for {suite} a month. Sign up and start today at
-<a href="/app" style="text-decoration:underline">compepharma.com/app</a>.</p>
+<p class="lede">Buy only the modules you need, or the whole Suite for {suite} a month (excl. VAT; for business customers).
+Sign up and start today at <a href="/app" style="text-decoration:underline">compepharma.com/app</a>.</p>
 <div class="bz-g4">{mod_cards}</div></section>
 
 <section class="bz-sec" id="plans"><div class="k">Plans</div><h2 class="t">From one report to an organisation-wide licence</h2>
 <div class="bz-g3">
 <div class="bz-card"><h3>Self-serve</h3><p>For individuals and small teams.</p><ul><li>Any Business Suite module, monthly</li>
 <li>Ready-to-go market analyses, per product</li><li>CompePharma Daily for everyone on the team, free</li></ul>
-<div class="pr">{suite} <small>Suite per month</small></div><div class="go"><a class="btn ghost" href="/app">Start in the app</a></div></div>
+<div class="pr">{suite} <small>Suite per month, excl. VAT</small></div><div class="go"><a class="btn ghost" href="/app">Start in the app</a></div></div>
 <div class="bz-card hl"><h3>Company</h3><p>For commercial, BD and market access teams.</p><ul><li>Business Suite for the team</li>
 <li>A yearly allowance of ready-to-go analyses at a reduced rate</li><li>Annual invoice for procurement</li></ul>
 <div class="pr">Annual <small>quoted per team</small></div><div class="go"><a class="btn" href="#talk">Get a quote</a></div></div>

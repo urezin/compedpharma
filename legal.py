@@ -1,5 +1,6 @@
 """
-Trust & legal pages: /about, /contact, /privacy, /terms, /editorial-policy, /disclaimer.
+Trust & legal pages: /about, /contact, /editorial-policy, /disclaimer, plus the standalone /terms, /privacy, /cookies and
+/dpa pages (English and Greek) kept in static/legal/.
 
 Required for Google AdSense review (About and Contact pages, a privacy policy that discloses
 advertising cookies) and for EU users (GDPR information, publisher identity). The same module
@@ -14,16 +15,19 @@ from fastapi import APIRouter
 from fastapi.responses import FileResponse as _FileResponse, HTMLResponse
 from pathlib import Path as _Path
 
-UPDATED = "16 November 2026"
+UPDATED = "23 November 2026"
 OPERATOR = "PQRA, the regulatory, quality and pharmacovigilance consultancy of Dimitrios Gkikas"
 CITY = "Marousi, Athens, Greece"
-EMAIL = "info@pqra.gr"
+EMAIL = "info@compepharma.com"
 PHONE = "+30 21 0444 1982"
 # Provider identification required by P.D. 131/2003 art. 4 (Greek e-commerce rules)
 LEGAL_NAME = "Dimitrios Gkikas (trading as PQRA)"
 ADDRESS = "Leof. Kifisias 44, 151 25 Marousi, Athens, Greece"
 VAT_NO = "EL131680720"
-DISCLAIMER_UPDATED = "16 November 2026"
+DISCLAIMER_UPDATED = "23 November 2026"
+
+# Shown under every form that collects personal data (newsletter, enquiries, app sign-up)
+CONSENT_LINE = ('By continuing you agree to the <a href="/terms">Terms</a>; see our <a href="/privacy">Privacy Policy</a>.')
 
 # One-line notice for every page footer
 FOOTER_NOTE = ("General information only, not medical, regulatory, legal or investment advice. Content is produced with "
@@ -49,11 +53,6 @@ def bodies(s: dict) -> dict[str, tuple[str, str, str]]:
     n, sister_n, sister_u = s["name"], s["sister"][0], s["sister"][1]
     contact = (f'<div class="card"><b>{_e(n)}</b><br>Published by {_e(OPERATOR)}<br>{_e(CITY)}<br>'
                f'Email: <a href="mailto:{EMAIL}">{EMAIL}</a><br>Phone: {_e(PHONE)}</div>')
-    acc = ("<li><b>Account data</b> if you sign in to a paid product: your name, email address and the "
-           "identifier returned by Google or Microsoft sign-in, used to run your account.</li>") if s.get("accounts") else ""
-    pay = ("<li><b>Payment data</b> is handled by Stripe, our payment processor. We never see or store your card details; "
-           "we keep the subscription status and invoices Stripe returns to us.</li>") if s.get("payments") else ""
-
     about = f"""<h1>About {_e(n)}</h1><div class="upd">{_e(s['domain'])}</div>
 <p>{_e(s['what'])}</p>
 <p>{_e(n)} is written for {_e(s['audience'])}. Every story starts from a primary record (a regulator's website, an official
@@ -84,10 +83,13 @@ the story, with a note on the page when the change is material.</li>
 
     editorial = f"""<h1>Editorial policy</h1><div class="upd">Last updated {UPDATED}</div>
 <h2>Sources</h2>
-<p>{_e(n)} reports from primary records only: medicines regulators (EMA, FDA, MHRA and the national competent
-authorities), the European Commission and official journals, courts and enforcement agencies, and company filings with
-the SEC. Each story names and links its source. We do not rewrite other publications' articles and we do not link to trade
-press.</p>
+<p>{_e(n)}'s news stories are reported from primary records: medicines regulators (EMA, FDA, MHRA and the national
+competent authorities), the European Commission and official journals, courts and enforcement agencies, and company filings
+with the SEC. Each story names and links its source. We do not rewrite other publications' articles.</p>
+<p>Our data reports and market analyses (for example the top-100 drugs outlook) start from company results and annual
+reports and official records too. Where a figure or event is not in a primary record, they may also cite secondary
+sources such as medical and trade press, investor-relations interviews or industry databases; each one is named and linked
+next to the figure it supports.</p>
 <h2>Use of AI tools</h2>
 <p>We use AI language models (Anthropic's Claude) to read the source documents and draft the stories, analyses and opinion
 pieces in our own words, following written instructions on accuracy, attribution and tone. Figures, dates and names come
@@ -102,50 +104,6 @@ official source and correct promptly.</p>
 <h2>Independence and conflicts of interest</h2>
 <p>{_e(n)} and PQRA have the same owner, and PQRA's services are promoted in labelled house advertisements. Companies do not
 pay for coverage, and we do not publish sponsored stories.</p>"""
-
-    privacy = f"""<h1>Privacy &amp; cookie policy</h1><div class="upd">Last updated {UPDATED}</div>
-<p>This policy explains what personal data {_e(n)} ({_e(s['domain'])}) collects, why, and your rights under the EU
-General Data Protection Regulation (GDPR).</p>
-<h2>Who is responsible</h2>
-<p>The data controller is {_e(OPERATOR)}, {_e(CITY)}. Contact: <a href="mailto:{EMAIL}">{EMAIL}</a>.</p>
-<h2>What we collect and why</h2>
-<ul><li><b>Reader account and subscription:</b> your email address, confirmed through a link we email you, so we can sign
-you in and give subscribers access to full articles (legal basis: performing the contract you asked for). A cookie on your
-device keeps you signed in for a year; there is no password. Payments and the subscription are handled by Stripe; we keep the
-subscription status and Stripe's customer reference, never card details. Because the subscription is sold through Link
-(Stripe) as seller of record, Stripe and Link also process your payment and billing details as an independent controller. Ask us at any time to delete your account.</li>
-<li><b>Newsletter:</b> your email address, so we can send the daily email you asked for (legal basis: your consent,
-which you can withdraw at any time with the unsubscribe link).</li>
-{acc}{pay}
-<li><b>Messages</b> you send us, to answer them (legitimate interest).</li>
-<li><b>Server logs:</b> IP address, browser and pages requested, kept for a short time for security and to keep the site
-running (legitimate interest).</li></ul>
-<p>We do not sell personal data.</p>
-<h2>Advertising and cookies</h2>
-<p>This site shows advertising from Google AdSense. Third-party vendors, including Google, use cookies to serve ads based on
-a user's prior visits to this website or other websites. Google's use of advertising cookies enables it and its partners to
-serve ads to you based on your visits to this site and/or other sites on the Internet.</p>
-<ul><li>You can opt out of personalised advertising in Google's
-<a href="https://adssettings.google.com" rel="noopener">Ads Settings</a>, or opt out of some third-party vendors' use of
-cookies for personalised advertising at <a href="https://www.aboutads.info/choices/" rel="noopener">aboutads.info</a>
-and <a href="https://www.youronlinechoices.eu/" rel="noopener">youronlinechoices.eu</a>.</li>
-<li>How Google uses data when you use partner sites:
-<a href="https://policies.google.com/technologies/partner-sites" rel="noopener">policies.google.com/technologies/partner-sites</a>.</li>
-<li>Visitors in the European Economic Area, the UK and Switzerland are asked for consent through a consent message before
-personalised ads are shown. You can change your choice at any time from the privacy link in that message.</li></ul>
-<p>Besides advertising cookies, the site uses only cookies that are strictly necessary, for example to keep you signed in.</p>
-<h2>How long we keep data</h2>
-<p>Newsletter addresses until you unsubscribe; account and billing records for as long as the account is open and then as
-long as Greek tax law requires; server logs for up to 90 days.</p>
-<h2>Who processes data for us</h2>
-<p>Our hosting provider (Render), our email delivery provider, Google (advertising and sign-in), Microsoft (sign-in) and
-Stripe (payments). Some of them are in the United States; transfers rely on the EU-US Data Privacy Framework or the
-European Commission's standard contractual clauses.</p>
-<h2>Your rights</h2>
-<p>You can ask to access, correct, delete or export your data, to restrict or object to processing, and to withdraw consent.
-Write to <a href="mailto:{EMAIL}">{EMAIL}</a>. You can also complain to the Hellenic Data Protection Authority
-(<a href="https://www.dpa.gr" rel="noopener">dpa.gr</a>).</p>
-<h2>Changes</h2><p>We will post any change to this policy on this page, with the date at the top.</p>"""
 
     terms = f"""<h1>Terms of use</h1><div class="upd">Last updated {UPDATED}</div>
 <p>By using {_e(s['domain'])} you accept these terms. The site is published by {_e(OPERATOR)}, {_e(CITY)}.</p>
@@ -231,7 +189,6 @@ Editorial responsibility: Dimitrios Gkikas</div>
         "/about": (f"About {n}", f"Who publishes {n}, how it is funded and how its stories are written.", about),
         "/contact": (f"Contact {n}", f"Contact {n} for corrections, news, advertising, enterprise plans or privacy requests.", contact_html),
         "/editorial-policy": (f"Editorial policy | {n}", f"{n}'s sources, use of AI tools, corrections and independence.", editorial),
-        "/privacy": (f"Privacy & cookie policy | {n}", f"How {n} handles personal data, cookies and advertising.", privacy),
         "/terms": (f"Terms of use | {n}", f"Terms of use for {s['domain']}.", terms),
     }
 
@@ -243,7 +200,7 @@ def make_router(site: dict, page_fn) -> APIRouter:
     # they replace the short built-in versions below when the files are present.
     legal_dir = _Path(__file__).resolve().parent / "static" / "legal"
     served = set()
-    for kind in ("terms", "privacy", "cookies"):
+    for kind in ("terms", "privacy", "cookies", "dpa"):
         for lang, suffix in (("en", ""), ("el", "/el")):
             f = legal_dir / f"{kind}-{lang}.html"
             if f.exists():
@@ -260,5 +217,6 @@ def make_router(site: dict, page_fn) -> APIRouter:
 
 
 FOOTER_LINKS = ('<a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/editorial-policy">Editorial policy</a> · '
-                '<a href="/privacy">Privacy</a> · <a href="/cookies">Cookies</a> · <a href="/terms">Terms</a> · <a href="/disclaimer">Disclaimer</a>')
-PATHS = ["/about", "/contact", "/editorial-policy", "/privacy", "/cookies", "/terms", "/disclaimer"]
+                '<a href="/privacy">Privacy</a> · <a href="/cookies">Cookies</a> · <a href="/terms">Terms</a> · <a href="/dpa">DPA</a> · '
+                '<a href="/disclaimer">Disclaimer</a>')
+PATHS = ["/about", "/contact", "/editorial-policy", "/privacy", "/cookies", "/terms", "/dpa", "/disclaimer"]
