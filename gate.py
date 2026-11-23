@@ -45,9 +45,19 @@ def _base() -> str:
     return (os.getenv("PORTAL_BASE_URL") or "https://compepharma.com").rstrip("/")
 
 
+def vigieye_headers() -> dict:
+    """Headers for every server-to-server call to VigiEye. READERS_API_SECRET, when set, proves to VigiEye
+    that the call comes from this server (VigiEye checks X-Readers-Secret on its /api/readers/* endpoints)."""
+    h = {"User-Agent": "CompePharma portal"}
+    secret = os.getenv("READERS_API_SECRET", "")
+    if secret:
+        h["X-Readers-Secret"] = secret
+    return h
+
+
 def _http():
     import httpx
-    return httpx.Client(timeout=20, headers={"User-Agent": "CompePharma portal"})
+    return httpx.Client(timeout=20, headers=vigieye_headers())
 
 
 # --- who is reading? (asks VigiEye, cached briefly) ----------------------------------------------------
@@ -99,7 +109,27 @@ background:linear-gradient(rgba(255,255,255,0),var(--bg,#fff))}
 .rg button,.rg a.rg-btn{display:block!important;text-align:center;padding:12px 16px!important;border:0!important;border-radius:10px!important;
 font-weight:800!important;font-size:16px!important;cursor:pointer;background:#e4322b!important;color:#fff!important;text-decoration:none!important;
 opacity:1!important;-webkit-text-fill-color:#fff}.rg a.rg-btn:hover,.rg button:hover{filter:brightness(1.1)}.rg .msg{font-size:14px;min-height:1em}.rg ul{margin:4px 0 12px;padding-left:20px;font-size:14.5px}
-.rg .fine{font-size:12.5px;opacity:.8}.rg .price{font-size:26px;font-weight:800}"""
+.rg .fine{font-size:12.5px;opacity:.8}.rg .price{font-size:26px;font-weight:800}.rg .rgw{display:grid;gap:8px}"""
+
+# Explicit, unticked box: the reader asks for access to start at once and acknowledges that the 14-day withdrawal
+# right then ends (Directive 2011/83/EU art. 16(m); Greek Law 2251/1994 art. 3ιγ). The choice is sent to VigiEye,
+# which sells the subscription and keeps the record with the subscription.
+WAIVER_TEXT = ("I ask for access to start as soon as I subscribe, and I understand that I then lose my 14-day right "
+               "of withdrawal.")
+
+
+def _waiver_box(required: bool = True) -> str:
+    return (f'<label class="ck"><input type="checkbox" name="withdrawal_waiver" value="1"{" required" if required else ""}> '
+            f'{_e(WAIVER_TEXT)}</label>')
+
+
+def waiver_button(url: str, label: str, style: str = "") -> str:
+    """A subscribe button that only works once the withdrawal box is ticked."""
+    js = ("var c=this.parentNode.querySelector('input');if(!c.checked){c.focus();"
+          "this.parentNode.querySelector('.msg').textContent='Please tick the box above to continue.';return false;}")
+    return (f'<div class="rgw">{_waiver_box(required=False)}<a class="rg-btn" style="{style}" href="{_e(url)}" '
+            f'onclick="{js}">{_e(label)}</a><div class="msg" aria-live="polite"></div></div>')
+
 
 _BENEFITS = ("<ul><li>Every article, analysis and opinion piece on CompePharma and VigiEye</li>"
              "<li>One subscription for both sites, cancel any time</li></ul>")
@@ -112,6 +142,7 @@ def signup_box(return_url: str, source: str = "article", heading: str = "Subscri
 <form onsubmit="rgSignup(this);return false;" data-src="{_e(source)}" data-ret="{_e(return_url)}">
 <input type="email" name="email" placeholder="Your email" required autocomplete="email">
 <label class="ck"><input type="checkbox" name="newsletter" value="1"> Also send me the free daily CompePharma email (unsubscribe any time)</label>
+{_waiver_box()}
 <button type="submit">Continue</button><div class="msg" aria-live="polite"></div>
 <div class="fine">We'll email you a link to confirm your address, then take you to secure checkout (Stripe). Billed monthly
 until you cancel; access starts at once, so the 14-day withdrawal right ends when it does.
@@ -119,20 +150,21 @@ Already a subscriber? Enter your email and the link will sign you in.
 See our <a href="/terms">terms</a> and <a href="/privacy">privacy policy</a>.</div>
 </form></div></div>
 <script>async function rgSignup(f){{const m=f.querySelector('.msg');m.textContent='…';
-const d=Object.fromEntries(new FormData(f).entries());d.newsletter=!!d.newsletter;d.source=f.dataset.src||'article';d.return=f.dataset.ret||location.href;
+const d=Object.fromEntries(new FormData(f).entries());d.newsletter=!!d.newsletter;d.withdrawal_waiver=!!d.withdrawal_waiver;d.source=f.dataset.src||'article';d.return=f.dataset.ret||location.href;
 try{{const r=await fetch('/reader/signup',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(d),credentials:'same-origin'}});
 const j=await r.json();if(r.ok){{f.innerHTML='<p><b>Check your inbox.</b> We sent a link to '+d.email.replace(/[<>&]/g,'')+'. Open it to continue (check spam if it is not there in a minute).</p>';}}else m.textContent=j.error||'That did not work.';}}
 catch(e){{m.textContent='Something went wrong, please try again.';}}return false;}}</script>"""
 
 
 def _subscribe_url(link: str, ret: str) -> str:
-    return f"{_vigieye()}/reader/subscribe?t={quote(link, safe='')}&return={quote(ret, safe='')}"
+    """Only reached after the reader ticked the withdrawal box (button or sign-up form), so it says so."""
+    return f"{_vigieye()}/reader/subscribe?t={quote(link, safe='')}&return={quote(ret, safe='')}&withdrawal_waiver=1"
 
 
 def subscribe_box(email: str, subscribe_url: str) -> str:
     return f"""<style>{_CSS}</style><div class="rg"><div class="fade"></div><div class="card">
 <h3>Subscribe to keep reading</h3><p><span class="price">{_e(PRICE_LABEL)}</span> / month</p>{_BENEFITS}
-<a class="rg-btn" href="{_e(subscribe_url)}">Subscribe with Stripe</a>
+{waiver_button(subscribe_url, "Subscribe with Stripe")}
 <p class="fine" style="margin-top:8px">Billed monthly until you cancel. Access starts at once, so the 14-day withdrawal right ends when it does.
 <a href="/terms">Terms</a></p>
 <p class="fine">Signed in as {_e(email)} · <a href="/reader/signout">not you?</a></p></div></div>"""
@@ -195,7 +227,7 @@ async def reader_signup(request: Request):
         body = body if isinstance(body, dict) else {}
     except Exception:
         body = {}
-    payload = {k: body.get(k) for k in ("email", "name", "company", "role", "source", "newsletter")}
+    payload = {k: body.get(k) for k in ("email", "name", "company", "role", "source", "newsletter", "withdrawal_waiver")}
     payload.update(site=SITE, **{"return": _safe_return(str(body.get("return") or ""))})
     try:
         with _http() as c:
@@ -240,7 +272,7 @@ def reader_login(request: Request):
     if info.get("email"):
         btns = []
         if not info.get("paid") and info.get("link"):
-            btns.append(f'<a class="rg-btn" href="{_e(_subscribe_url(info["link"], _base() + "/"))}">Subscribe for {_e(PRICE_LABEL)} / month</a>')
+            btns.append(waiver_button(_subscribe_url(info["link"], _base() + "/"), f"Subscribe for {PRICE_LABEL} / month"))
         if info.get("has_subscription") and not info.get("complimentary"):
             btns.append('<a class="rg-btn" style="background:#334155!important" href="/reader/manage">Manage or cancel subscription</a>')
         btns.append('<a class="rg-btn" style="background:#64748b!important" href="/reader/signout">Sign out</a>')
@@ -335,7 +367,8 @@ def _signed_in(request: Request, code: int, j: dict) -> JSONResponse:
 @router.post("/reader/register", include_in_schema=False)
 async def reader_register(request: Request):
     b = await _jbody(request)
-    payload = {k: b.get(k) for k in ("email", "username", "password", "name", "company", "role", "source", "newsletter")}
+    payload = {k: b.get(k) for k in ("email", "username", "password", "name", "company", "role", "source", "newsletter",
+                                     "withdrawal_waiver")}
     payload.update(site=SITE, **{"return": _safe_return(str(b.get("return") or ""))})
     return _signed_in(request, *_proxy("/api/readers/register", payload))
 
@@ -421,6 +454,7 @@ def auth_box(return_url: str, source: str = "article", heading: str = "Subscribe
 <input type="text" name="username" placeholder="Username" required autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9][A-Za-z0-9._-]{{2,29}}">
 <input type="password" name="password" placeholder="Password (at least 8 characters)" required autocomplete="new-password" minlength="8">
 <label class="ck"><input type="checkbox" name="newsletter" value="1"> {_e(nl)}</label>
+{_waiver_box() if show_price else ""}
 <button type="submit">Create account</button><div class="msg" aria-live="polite"></div>
 <div class="fine">You'll be signed in straight away; we also email you a link to confirm your address. Reading every article takes a
 {_e(PRICE_LABEL)}/month subscription (secure checkout by Stripe), billed monthly until you cancel; access starts at once, so the
@@ -445,7 +479,7 @@ function rgTab(el,t){{const c=el.closest('.card');c.querySelectorAll('form').for
 c.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t||(t==='forgot'&&b.dataset.t==='login')));}}
 function rgForgot(el){{rgTab(el,'forgot');}}
 async function rgAuth(f){{const m=f.querySelector('.msg');m.textContent='…';const mode=f.dataset.mode;
-const d=Object.fromEntries(new FormData(f).entries());d.newsletter=!!d.newsletter;d.source=f.dataset.src||'article';d.return=f.dataset.ret||location.href;
+const d=Object.fromEntries(new FormData(f).entries());d.newsletter=!!d.newsletter;d.withdrawal_waiver=!!d.withdrawal_waiver;d.source=f.dataset.src||'article';d.return=f.dataset.ret||location.href;
 const url={{register:'{prefix}/register',login:'{login_path}',forgot:'{prefix}/forgot'}}[mode];
 try{{const r=await fetch(url,{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(d),credentials:'same-origin'}});
 const j=await r.json();if(!r.ok){{m.textContent=j.error||'That did not work.';return false;}}
