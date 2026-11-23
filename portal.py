@@ -80,7 +80,7 @@ def _load(force: bool = False) -> dict:
                 _cache["items"] = items
             try:
                 _cache["editorial"] = _get("/api/editorial?limit=6").get("items", [])
-                _cache["ticker"] = _get("/api/ticker?limit=14&region=US").get("items", [])
+                _cache["ticker"] = _get("/api/ticker?limit=30&region=US").get("items", [])
                 _cache["insights"] = _get("/api/cp-articles?limit=60").get("items", []) or _cache["insights"]
             except Exception:
                 pass
@@ -1025,3 +1025,23 @@ def sitemap():
     body = "".join(f"<url><loc>{_e(BASE + u)}</loc><lastmod>{today}</lastmod><changefreq>hourly</changefreq></url>" for u in urls)
     return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>',
                     media_type="application/xml")
+
+# ---- public ticker feed (same contract as VigiEye's /api/ticker) ----------------------------
+# Lets partner sites (pqra.gr etc.) show CompePharma's "Coming up" FDA dates in their own tickers.
+@router.get("/api/ticker", include_in_schema=False)
+def api_ticker(limit: int = 20, region: str = ""):
+    from fastapi.responses import JSONResponse
+    limit = max(1, min(int(limit or 20), 50))
+    reg = (region or "").strip().upper()
+    today = date.today().isoformat()
+    items = []
+    for i in (_load().get("ticker") or []):
+        if not i.get("date") or i["date"] < today:
+            continue
+        if reg and (i.get("region") or "").upper() != reg:
+            continue
+        items.append({"date": i["date"], "region": i.get("region") or "US", "label": i.get("label") or "",
+                      "title": i.get("title") or "", "url": i.get("url") or BASE + "/"})
+    items.sort(key=lambda x: x["date"])
+    return JSONResponse({"items": items[:limit], "home": BASE + "/"},
+                        headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=300"})
